@@ -183,7 +183,7 @@ private:
         static bool first = true;
         const auto opcode = m_code[pc];
         auto& traits = instr::traits[m_last_opcode];
-        int push_num = traits.stack_height_required + traits.stack_height_change;
+        [[maybe_unused]] int push_num = traits.stack_height_required + traits.stack_height_change;
         if (m_last_opcode >= OP_DUP1 && m_last_opcode <= OP_DUP16) {
             push_num = 1;
         } else if (m_last_opcode >= OP_SWAP1 && m_last_opcode <= OP_SWAP16) {
