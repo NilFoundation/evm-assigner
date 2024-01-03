@@ -8,7 +8,9 @@
 #include "execution_state.hpp"
 #include "instructions_traits.hpp"
 #include "instructions_xmacro.hpp"
+#include "fprinter.h"
 #include <ethash/keccak.hpp>
+#include <iostream>
 
 namespace evmone
 {
@@ -45,6 +47,13 @@ struct Result
 {
     evmc_status_code status;
     int64_t gas_left;
+};
+
+struct DynStackResult
+{
+    evmc_status_code status;
+    int64_t gas_left;
+    int16_t stack_pop{-1};
 };
 
 /// Instruction result indicating that execution terminates unconditionally.
@@ -1051,6 +1060,49 @@ inline Result log(StackTop stack, int64_t gas_left, ExecutionState& state) noexc
     return {EVMC_SUCCESS, gas_left};
 }
 
+struct EvmPrintfHandler: public PrintfHandler {
+    EvmPrintfHandler(ExecutionState& _state, StackTop& _stack): state(_state), stack(_stack) {}
+    uint64_t GetArgNumber() override {
+        auto val = (uint64_t)stack.pop();
+        return val;
+    }
+    const char* GetArgString() override{
+        auto val = stack.pop();
+        assert(state.memory.size() > val);
+        auto str = reinterpret_cast<const char*>(&state.memory[(uint64_t)val]);
+        return str;
+    }
+    void Puts(const char* data) override {
+        ss += data;
+    }
+    void Putc(char ch) override {
+        ss += ch;
+    }
+    std::string ss;
+    ExecutionState& state;
+    StackTop stack;
+};
+
+inline DynStackResult printf(
+    StackTop stack, int64_t gas_left, [[maybe_unused]] ExecutionState& state) noexcept
+{
+    auto stack_origin = stack;
+
+    auto& fmt_ptr = stack.pop();
+    assert(fmt_ptr <= std::numeric_limits<uint64_t>::max());
+
+    const char* fmt_str = reinterpret_cast<const char*>(&state.memory[(uint64_t)fmt_ptr]);
+
+    EvmPrintfHandler handler(state, stack);
+    auto res = PrintfParser::Parse(fmt_str, handler);
+    assert(res == 0);
+    std::cout << handler.ss;
+
+    auto stack_pop = &stack_origin.top() - &handler.stack.top();
+    assert(stack_pop < std::numeric_limits<int16_t>::max());
+
+    return {EVMC_SUCCESS, gas_left, int16_t(stack_pop)};
+}
 
 template <Opcode Op>
 Result call_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept;
