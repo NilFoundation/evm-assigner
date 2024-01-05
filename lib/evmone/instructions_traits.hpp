@@ -103,8 +103,10 @@ constexpr inline GasCostTable gas_costs = []() noexcept {
         table[EVMC_FRONTIER][op] = 3;
     for (auto op = size_t{OP_DUP1}; op <= OP_DUP16; ++op)
         table[EVMC_FRONTIER][op] = 3;
+    table[EVMC_FRONTIER][OP_DUP] = 3;
     for (auto op = size_t{OP_SWAP1}; op <= OP_SWAP16; ++op)
         table[EVMC_FRONTIER][op] = 3;
+    table[EVMC_FRONTIER][OP_SWAP] = 3;
     for (auto op = size_t{OP_LOG0}; op <= OP_LOG4; ++op)
         table[EVMC_FRONTIER][op] = static_cast<int16_t>((op - OP_LOG0 + 1) * 375);
     table[EVMC_FRONTIER][OP_PRINTF] = 3;
@@ -378,6 +380,7 @@ constexpr inline std::array<Traits, 256> traits = []() noexcept {
     table[OP_DUP14] = {"DUP14", 0, false, 14, 1, EVMC_FRONTIER};
     table[OP_DUP15] = {"DUP15", 0, false, 15, 1, EVMC_FRONTIER};
     table[OP_DUP16] = {"DUP16", 0, false, 16, 1, EVMC_FRONTIER};
+    table[OP_DUP] = {"DUP", 0, false, 1, 0, EVMC_FRONTIER};
 
     table[OP_SWAP1] = {"SWAP1", 0, false, 2, 0, EVMC_FRONTIER};
     table[OP_SWAP2] = {"SWAP2", 0, false, 3, 0, EVMC_FRONTIER};
@@ -395,6 +398,7 @@ constexpr inline std::array<Traits, 256> traits = []() noexcept {
     table[OP_SWAP14] = {"SWAP14", 0, false, 15, 0, EVMC_FRONTIER};
     table[OP_SWAP15] = {"SWAP15", 0, false, 16, 0, EVMC_FRONTIER};
     table[OP_SWAP16] = {"SWAP16", 0, false, 17, 0, EVMC_FRONTIER};
+    table[OP_SWAP] = {"SWAP", 0, false, 1, -1, EVMC_FRONTIER};
 
     table[OP_LOG0] = {"LOG0", 0, false, 2, -2, EVMC_FRONTIER};
     table[OP_LOG1] = {"LOG1", 0, false, 3, -3, EVMC_FRONTIER};
