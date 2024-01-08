@@ -885,8 +885,17 @@ inline code_iterator push(StackTop stack, ExecutionState& /*state*/, code_iterat
 template <int N>
 inline void dup(StackTop stack) noexcept
 {
-    static_assert(N >= 1 && N <= 16);
-    stack.push(stack[N - 1]);
+    static_assert(N >= 0 && N <= 16);
+    if constexpr (N == 0)
+    {
+        auto& index = stack.pop();
+        assert(index < std::numeric_limits<int>::max());
+        stack.push(stack[(int)index - 1]);
+    }
+    else
+    {
+        stack.push(stack[N - 1]);
+    }
 }
 
 /// SWAP instruction implementation.
@@ -894,23 +903,32 @@ inline void dup(StackTop stack) noexcept
 template <int N>
 inline void swap(StackTop stack) noexcept
 {
-    static_assert(N >= 1 && N <= 16);
+    static_assert(N >= 0 && N <= 16);
 
     // The simple std::swap(stack.top(), stack[N]) is not used to workaround
     // clang missed optimization: https://github.com/llvm/llvm-project/issues/59116
     // TODO(clang): Check if #59116 bug fix has been released.
-
-    auto& a = stack[N];
+    uint256* a;
+    if constexpr (N == 0)
+    {
+        auto& index = stack.pop();
+        assert(index < std::numeric_limits<int>::max());
+        a = &stack[(int)index];
+    }
+    else
+    {
+        a = &stack[N];
+    }
     auto& t = stack.top();
     auto t0 = t[0];
     auto t1 = t[1];
     auto t2 = t[2];
     auto t3 = t[3];
-    t = a;
-    a[0] = t0;
-    a[1] = t1;
-    a[2] = t2;
-    a[3] = t3;
+    t = *a;
+    (*a)[0] = t0;
+    (*a)[1] = t1;
+    (*a)[2] = t2;
+    (*a)[3] = t3;
 }
 
 inline code_iterator dupn(StackTop stack, ExecutionState& state, code_iterator pos) noexcept
