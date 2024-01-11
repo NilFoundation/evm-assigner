@@ -1,3 +1,4 @@
+hunter_add_package(GTest)
 
 include(GoogleTest)
 
