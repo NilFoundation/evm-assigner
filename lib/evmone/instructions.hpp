@@ -1112,7 +1112,7 @@ inline DynStackResult printf(
     const char* fmt_str = reinterpret_cast<const char*>(&state.memory[(uint64_t)fmt_ptr]);
 
     EvmPrintfHandler handler(state, stack);
-    auto res = PrintfParser::Parse(fmt_str, handler);
+    auto res [[maybe_unused]] = PrintfParser::Parse(fmt_str, handler);
     assert(res == 0);
     std::cout << handler.ss;
 

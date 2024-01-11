@@ -53,7 +53,7 @@ void TestPrintf(const char* fmt, Args... args) {
     static constexpr int REF_STR_SIZE = 1024;
     char ref_str[REF_STR_SIZE];
     auto ref_res = snprintf(ref_str, REF_STR_SIZE, fmt, std::forward<Args>(args)...);
-    assert(ref_res > 0 && ref_res < REF_STR_SIZE);
+    ASSERT_TRUE(ref_res > 0 && ref_res < REF_STR_SIZE);
     ASSERT_EQ(handler.ResultString(), ref_str);
 }
 
