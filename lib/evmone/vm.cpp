@@ -27,10 +27,13 @@ constexpr evmc_capabilities_flagset get_capabilities(evmc_vm* /*vm*/) noexcept
     return EVMC_CAPABILITY_EVM1;
 }
 
-evmc_set_option_result set_option(evmc_vm* c_vm, char const* c_name, char const* c_value) noexcept
+evmc_set_option_result set_option(evmc_vm* c_vm, char const* c_name,
+    [[maybe_unused]] char const* c_value) noexcept
 {
     const auto name = (c_name != nullptr) ? std::string_view{c_name} : std::string_view{};
+#if EVMONE_CGOTO_SUPPORTED
     const auto value = (c_value != nullptr) ? std::string_view{c_value} : std::string_view{};
+#endif
     auto& vm = *static_cast<VM*>(c_vm);
 
     if (name == "advanced")

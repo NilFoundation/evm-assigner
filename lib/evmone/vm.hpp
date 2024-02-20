@@ -9,7 +9,7 @@
 #if defined(_MSC_VER) && !defined(__clang__)
 #define EVMONE_CGOTO_SUPPORTED 0
 #else
-#define EVMONE_CGOTO_SUPPORTED 1
+#define EVMONE_CGOTO_SUPPORTED 0
 #endif
 
 namespace evmone
