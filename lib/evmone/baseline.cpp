@@ -305,53 +305,6 @@ int64_t dispatch(const CostTable& cost_table, ExecutionState& state, int64_t gas
     intx::unreachable();
 }
 
-#if EVMONE_CGOTO_SUPPORTED
-int64_t dispatch_cgoto(
-    const CostTable& cost_table, ExecutionState& state, int64_t gas, const uint8_t* code) noexcept
-{
-#pragma GCC diagnostic ignored "-Wpedantic"
-
-    static constexpr void* cgoto_table[] = {
-#define ON_OPCODE(OPCODE) &&TARGET_##OPCODE,
-#undef ON_OPCODE_UNDEFINED
-#define ON_OPCODE_UNDEFINED(_) &&TARGET_OP_UNDEFINED,
-        MAP_OPCODES
-#undef ON_OPCODE
-#undef ON_OPCODE_UNDEFINED
-#define ON_OPCODE_UNDEFINED ON_OPCODE_UNDEFINED_DEFAULT
-    };
-    static_assert(std::size(cgoto_table) == 256);
-
-    const auto stack_bottom = state.stack_space.bottom();
-
-    // Code iterator and stack top pointer for interpreter loop.
-    Position position{code, stack_bottom};
-
-    goto* cgoto_table[*position.code_it];
-
-#define ON_OPCODE(OPCODE)                                                                 \
-    TARGET_##OPCODE : ASM_COMMENT(OPCODE);                                                \
-    if (const auto next = invoke<OPCODE>(cost_table, stack_bottom, position, gas, state); \
-        next.code_it == nullptr)                                                          \
-    {                                                                                     \
-        return gas;                                                                       \
-    }                                                                                     \
-    else                                                                                  \
-    {                                                                                     \
-        /* Update current position only when no error,                                    \
-           this improves compiler optimization. */                                        \
-        position = next;                                                                  \
-    }                                                                                     \
-    goto* cgoto_table[*position.code_it];
-
-    MAP_OPCODES
-#undef ON_OPCODE
-
-TARGET_OP_UNDEFINED:
-    state.status = EVMC_UNDEFINED_INSTRUCTION;
-    return gas;
-}
-#endif
 }  // namespace
 
 evmc_result execute(
@@ -371,12 +324,7 @@ evmc_result execute(
     }
     else
     {
-#if EVMONE_CGOTO_SUPPORTED
-        if (vm.cgoto)
-            gas = dispatch_cgoto(cost_table, state, gas, code.data());
-        else
-#endif
-            gas = dispatch<false>(cost_table, state, gas, code.data());
+        gas = dispatch<false>(cost_table, state, gas, code.data());
     }
 
     const auto gas_left = (state.status == EVMC_SUCCESS || state.status == EVMC_REVERT) ? gas : 0;

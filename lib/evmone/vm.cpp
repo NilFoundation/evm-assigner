@@ -6,7 +6,6 @@
 /// EVMC instance (class VM) and entry point of evmone is defined here.
 
 #include "vm.hpp"
-#include "advanced_execution.hpp"
 #include "baseline.hpp"
 #include <evmone/evmone.h>
 #include <cassert>
@@ -36,12 +35,7 @@ evmc_set_option_result set_option(evmc_vm* c_vm, char const* c_name,
 #endif
     auto& vm = *static_cast<VM*>(c_vm);
 
-    if (name == "advanced")
-    {
-        c_vm->execute = evmone::advanced::execute;
-        return EVMC_SET_OPTION_SUCCESS;
-    }
-    else if (name == "cgoto")
+    if (name == "cgoto")
     {
 #if EVMONE_CGOTO_SUPPORTED
         if (value == "no")

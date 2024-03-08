@@ -4,13 +4,8 @@
 
 include(LibraryTools)
 
-add_library(evmone
+set(evmone_sources
     ${include_dir}/evmone/evmone.h
-    advanced_analysis.cpp
-    advanced_analysis.hpp
-    advanced_execution.cpp
-    advanced_execution.hpp
-    advanced_instructions.cpp
     baseline.cpp
     baseline.hpp
     baseline_instruction_table.cpp
@@ -29,6 +24,9 @@ add_library(evmone
     vm.cpp
     vm.hpp
 )
+
+add_library(evmone ${evmone_sources})
+
 get_target_property(FPRINTER_DIR fprinter SOURCE_DIR)
 
 target_compile_features(evmone PUBLIC cxx_std_20)

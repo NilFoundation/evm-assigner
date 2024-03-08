@@ -10,10 +10,6 @@
 
 namespace evmone
 {
-namespace advanced
-{
-struct AdvancedCodeAnalysis;
-}
 namespace baseline
 {
 class CodeAnalysis;
@@ -151,7 +147,6 @@ public:
     union
     {
         const baseline::CodeAnalysis* baseline = nullptr;
-        const advanced::AdvancedCodeAnalysis* advanced;
     } analysis{};
 
     std::vector<const uint8_t*> call_stack;

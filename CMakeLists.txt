@@ -121,12 +121,6 @@ set(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_subdirectory(lib)
 
-if(EVMONE_TESTING)
-    enable_testing()
-    add_subdirectory(test)
-endif()
-
-
 # INSTALL
 
 set(install_targets evmone)
