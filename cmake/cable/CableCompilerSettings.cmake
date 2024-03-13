@@ -84,8 +84,10 @@ macro(cable_configure_compiler)
                 add_compile_options(-Wpedantic)
             endif()
 
-            # Enable basing warnings set and treat them as errors.
-            add_compile_options(-Werror -Wall -Wextra -Wshadow)
+            if (ENABLE_WARNINGS)
+                # Enable basing warnings set and treat them as errors.
+                add_compile_options(-Werror -Wall -Wextra -Wshadow)
+            endif()
 
             if(NOT cable_NO_CONVERSION_WARNINGS)
                 # Enable conversion warnings if not explicitly disabled.
