@@ -30,7 +30,7 @@ add_library(evmone ${evmone_sources})
 get_target_property(FPRINTER_DIR fprinter SOURCE_DIR)
 
 target_compile_features(evmone PUBLIC cxx_std_20)
-target_link_libraries(evmone PUBLIC evmc::evmc intx::intx PRIVATE ethash::keccak)
+target_link_libraries(evmone PUBLIC evmc::evmc intx::intx PRIVATE ethash::keccak crypto3::blueprint)
 target_include_directories(evmone PUBLIC
     $<BUILD_INTERFACE:${include_dir}>$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     ${FPRINTER_DIR}
@@ -42,7 +42,7 @@ if(EVMONE_X86_64_ARCH_LEVEL GREATER_EQUAL 2)
     set_source_files_properties(cpu_check.cpp PROPERTIES COMPILE_DEFINITIONS EVMONE_X86_64_ARCH_LEVEL=${EVMONE_X86_64_ARCH_LEVEL})
 endif()
 
-if(CABLE_COMPILER_GNULIKE)
+if(CABLE_COMPILER_GNULIKE AND DISABLE_EXCEPTIONS)
     target_compile_options(
         evmone PRIVATE
         -fno-exceptions
