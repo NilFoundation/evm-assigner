@@ -3,10 +3,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "instructions_opcodes.hpp"
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <string>
 #include <vector>
+
+#include <nil/crypto3/zk/snark/arithmetization/plonk/params.hpp>
+#include <nil/crypto3/zk/snark/arithmetization/plonk/constraint_system.hpp>
+#include <nil/crypto3/algebra/curves/pallas.hpp>
+#include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
 namespace evmone
 {
@@ -18,6 +24,32 @@ class CodeAnalysis;
 using uint256 = intx::uint256;
 using bytes = std::basic_string<uint8_t>;
 using bytes_view = std::basic_string_view<uint8_t>;
+
+using ArithmetizationParams = nil::crypto3::zk::snark::plonk_arithmetization_params;
+using BlueprintFieldType = nil::crypto3::algebra::curves::pallas::base_field_type;
+using ArithmetizationType = nil::crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
+using var =
+    nil::crypto3::zk::snark::plonk_variable<typename BlueprintFieldType::value_type>;
+constexpr size_t WitnessAmount = 5;
+constexpr size_t PublicInputAmount = 2;
+constexpr size_t ConstantAmount = 1;
+constexpr size_t SelectorAmount = 30;
+using AssignmentType = nil::blueprint::assignment<ArithmetizationType>;
+
+class EVMAssignerState
+{
+public:
+    EVMAssignerState()
+    {
+        for (size_t i = 0; i < 30; ++i)
+        {
+           assignment_tables.emplace_back(WitnessAmount, PublicInputAmount, ConstantAmount, SelectorAmount);
+        }
+
+        // Fill public input here
+    }
+    std::vector<AssignmentType> assignment_tables;
+};
 
 
 /// Provides memory for EVM stack.
@@ -138,6 +170,8 @@ public:
     size_t output_offset = 0;
     size_t output_size = 0;
 
+    EVMAssignerState assigner_state;
+
 private:
     evmc_tx_context m_tx = {};
 
@@ -194,6 +228,19 @@ public:
         if (INTX_UNLIKELY(m_tx.block_timestamp == 0))
             m_tx = host.get_tx_context();
         return m_tx;
+    }
+
+    template <Opcode Op>
+    std::vector<var> get_assigner_input_variables(size_t table_idx)
+    {
+        // Default template specialization does nothing
+        return {};
+    }
+
+    template <Opcode Op>
+    void write_assignment_result(size_t table_idx, BlueprintFieldType::value_type value)
+    {
+        // Default template specialization does nothing
     }
 };
 }  // namespace evmone
