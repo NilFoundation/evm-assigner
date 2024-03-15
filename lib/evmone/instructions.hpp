@@ -15,6 +15,7 @@
 namespace evmone
 {
 using code_iterator = const uint8_t*;
+using nil::blueprint::var_value;
 
 /// Represents the pointer to the stack top item
 /// and allows retrieving stack items and manipulating the pointer.
@@ -137,6 +138,20 @@ inline bool check_memory(
     return check_memory(gas_left, memory, offset, static_cast<uint64_t>(size));
 }
 
+// Template specializations for MUL opcode
+template <>
+inline std::vector<var> ExecutionState::get_assigner_input_variables<Opcode::OP_MUL>(size_t table_idx)
+{
+    // TODO: Replace with meaningful input selection
+    return {var(), var()};
+}
+
+template <>
+inline void ExecutionState::write_assignment_result<Opcode::OP_MUL>(size_t table_idx, BlueprintFieldType::value_type value) {
+    // TODO: Replace with meaningful result var selection
+    assigner_state.assignment_tables[table_idx].witness(3, 4) = value;
+}
+
 namespace instr::core
 {
 
@@ -166,9 +181,13 @@ inline void add(StackTop stack) noexcept
     stack.top() += stack.pop();
 }
 
-inline void mul(StackTop stack) noexcept
+inline void mul(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.top() *= stack.pop();
+    size_t table_idx = 0;
+    AssignmentType &table = state.assigner_state.assignment_tables[table_idx];
+    std::vector<var> inputs = state.get_assigner_input_variables<Opcode::OP_MUL>(table_idx);
+    auto mul = var_value(table, inputs[0]) * var_value(table, inputs[1]);
+    state.write_assignment_result<Opcode::OP_MUL>(table_idx, mul);
 }
 
 inline void sub(StackTop stack) noexcept
