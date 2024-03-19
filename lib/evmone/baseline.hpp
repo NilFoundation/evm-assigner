@@ -10,6 +10,8 @@
 #include <string_view>
 #include <vector>
 
+#include <nil/blueprint/handler_base.hpp>
+
 namespace evmone
 {
 using bytes_view = std::basic_string_view<uint8_t>;
@@ -48,6 +50,8 @@ static_assert(std::is_move_constructible_v<CodeAnalysis>);
 static_assert(std::is_move_assignable_v<CodeAnalysis>);
 static_assert(!std::is_copy_constructible_v<CodeAnalysis>);
 static_assert(!std::is_copy_assignable_v<CodeAnalysis>);
+
+CodeAnalysis analyze(evmc_revision rev, bytes_view code);
 
 /// Analyze the code to build the bitmap of valid JUMPDEST locations.
 EVMC_EXPORT CodeAnalysis analyze(evmc_revision rev, bytes_view code);
