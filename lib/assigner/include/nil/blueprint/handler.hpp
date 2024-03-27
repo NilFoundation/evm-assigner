@@ -73,19 +73,42 @@ namespace nil {
                 return to_uint256(m_assignments[table_idx].selector(column_idx, row_idx));
             }
 
+
+        public:
+            static value_type to_field(const uint256 intx_number) {
+                assert(v < modulus);  // TODO: replace with crypto3 assert
+                typename BlueprintFieldType::value_type field_value;
+                for (unsigned i = 0; i < 4; ++i)
+                {
+                    typename BlueprintFieldType::integral_type word = intx_number[i];
+                    field_value += word << (64 * i);
+                }
+                return field_value;
+            }
+
+            static uint256 to_uint256(const value_type field_value) {
+                return integral_to_uint256(
+                    typename BlueprintFieldType::integral_type(field_value.data));
+            }
+
         private:
-
-            value_type to_field(const uint256 v) {
-                //TODO: implement conversion: https://github.com/chfast/intx/blob/e0732242e36b3bb08cc8cc23445b2bee7c28b9d0/include/intx/intx.hpp#L967
-                value_type field_val;
-                return field_val;
+            static constexpr uint256 integral_to_uint256(
+                typename BlueprintFieldType::integral_type integral_value)
+            {
+                intx::uint256 res;
+                typename BlueprintFieldType::integral_type word_mask = 1;
+                word_mask = word_mask << 64U;
+                word_mask -= 1; // Got mask for lowest 64 bits
+                auto num = integral_value;
+                for (unsigned i = 0; i < 4; ++i)
+                {
+                    res[i] = static_cast<uint64_t>(num & word_mask);
+                    num = num >> 64;
+                }
+                return res;
             }
 
-            uint256 to_uint256(const value_type v) {
-                //TODO: implement conversion: https://github.com/chfast/intx/blob/e0732242e36b3bb08cc8cc23445b2bee7c28b9d0/include/intx/intx.hpp#L967
-                uint256 val;
-                return val;
-            }
+            static constexpr uint256 modulus = integral_to_uint256(BlueprintFieldType::modulus);
 
             std::vector<assignment<ArithmetizationType>> &m_assignments;
             crypto3::zk::snark::plonk_table_description<BlueprintFieldType> m_desc;
