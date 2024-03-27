@@ -8,8 +8,9 @@
 
 #include <gtest/gtest.h>
 
+using BlueprintFieldType = typename nil::crypto3::algebra::curves::pallas::base_field_type;
+
 TEST(assigner, execute) {
-    using BlueprintFieldType = typename nil::crypto3::algebra::curves::pallas::base_field_type;
     using ArithmetizationType = nil::crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
 
     const std::size_t WitnessColumns = 15;
@@ -28,8 +29,8 @@ TEST(assigner, execute) {
     auto vm = evmc_create_evmone();
     evmc_revision rev = {};
 
-    // EVM bytecode goes here. This is one of the examples.
-    const uint8_t code[] = "\x43\x60\x00\x55\x43\x60\x00\x52\x59\x60\x00\xf3";
+    // EVM bytecode goes here.
+    const uint8_t code[] = "\x60\x04\x60\x08\x02";  // PUSH 4; PUSH 8; MUL;
     const size_t code_size = sizeof(code) - 1;
     const uint8_t input[] = "Hello World!";
     const evmc_uint256be value = {{1, 0}};
@@ -60,4 +61,25 @@ TEST(assigner, execute) {
     };
 
     assigner_instance.evaluate(vm, host_interface, ctx, rev, &msg, code, code_size);
+    EXPECT_EQ(assignments[0].witness(0, 0), 8);
+    EXPECT_EQ(assignments[0].witness(1, 0), 4);
+}
+
+TEST(assigner, conversions)
+{
+    intx::uint256 intx_number;
+    intx_number[2] = 10;  // Some big number, 10 << 128
+    auto field = nil::blueprint::handler<BlueprintFieldType>::to_field(intx_number);
+    // Compare string representations
+    std::ostringstream oss;
+    oss << field.data;
+    EXPECT_EQ(intx::to_string(intx_number), oss.str());
+    oss.str("");
+
+    // Modify field and test conversion to uint256
+    field *= 3;
+    intx_number = nil::blueprint::handler<BlueprintFieldType>::to_uint256(field);
+    oss << field.data;
+    EXPECT_EQ(intx::to_string(intx_number), oss.str());
+    oss.str("");
 }
