@@ -18,6 +18,19 @@ target_link_libraries(${PROJECT_NAME} INTERFACE
                       crypto3::blueprint
                       evmone)
 
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/nil/blueprint/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nil/blueprint)
+#evmc
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../evmc/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#evmone
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/execution_state.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/tracing.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/eof.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
 if(BUILD_ASSIGNER_TESTS)
     add_subdirectory(test)
 endif()
