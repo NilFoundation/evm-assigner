@@ -76,7 +76,7 @@ namespace nil {
 
         public:
             static value_type to_field(const uint256 intx_number) {
-                assert(v < modulus);  // TODO: replace with crypto3 assert
+                assert(intx_number < modulus);  // TODO: replace with crypto3 assert
                 typename BlueprintFieldType::value_type field_value;
                 for (unsigned i = 0; i < 4; ++i)
                 {
