@@ -6,15 +6,14 @@ find_package(GTest CONFIG REQUIRED)
 
 add_executable(assigner_tests assigner_test.cpp)
 
-#target_include_directories(assigner_tests PRIVATE
-#                           ${CMAKE_CURRENT_SOURCE_DIR}/../include
-#                           ${CMAKE_CURRENT_SOURCE_DIR}/../../blueprint/include
-#                           ${CMAKE_CURRENT_SOURCE_DIR}/../../crypto3/libs/)
-
 target_link_libraries(
         assigner_tests
         PRIVATE
         ${PROJECT_NAME}
         GTest::gtest_main
 )
+add_test(NAME assigner_tests COMMAND assigner_tests)
+set_tests_properties(assigner_tests PROPERTIES LABELS ASSIGNER)
 
+add_custom_target(run_assigner_tests COMMAND ${CMAKE_CTEST_COMMAND} -L ASSIGNER --output-on-failure WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_dependencies(run_assigner_tests assigner_tests)
