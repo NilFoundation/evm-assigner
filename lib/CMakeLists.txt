@@ -6,7 +6,5 @@ hunter_add_package(intx)
 find_package(intx CONFIG REQUIRED)
 
 add_subdirectory(fprinter)
-add_subdirectory(crypto3)
-add_subdirectory(blueprint)
 add_subdirectory(evmone)
 add_subdirectory(assigner)
