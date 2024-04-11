@@ -1,8 +1,4 @@
-hunter_add_package(GTest)
-
 include(GoogleTest)
-
-find_package(GTest CONFIG REQUIRED)
 
 add_executable(assigner_tests assigner_test.cpp)
 

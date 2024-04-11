@@ -6,7 +6,7 @@
 	url = https://github.com/ipsilon/evm-benchmarks
 [submodule "lib/blueprint"]
 	path = lib/blueprint
-	url = ../../NilFoundation/zkllvm-blueprint.git
+	url = https://github.com/NilFoundation/zkllvm-blueprint
 [submodule "lib/crypto3"]
 	path = lib/crypto3
-	url = ../../NilFoundation/crypto3.git
+	url = https://github.com/NilFoundation/crypto3

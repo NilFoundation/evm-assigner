@@ -1,8 +1,4 @@
-hunter_add_package(GTest)
-
 include(GoogleTest)
-
-find_package(GTest CONFIG REQUIRED)
 
 add_custom_target(fprinter DEPENDS fprinter.h)
 

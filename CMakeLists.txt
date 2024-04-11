@@ -22,7 +22,7 @@ include(CMakePackageConfigHelpers)
 cable_configure_toolchain(DEFAULT cxx17-pic)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
-include(Hunter/init)
+include(FetchContent)
 
 project(evmone_assigner LANGUAGES CXX C)
 
@@ -37,8 +37,26 @@ if(PROJECT_VERSION_MAJOR EQUAL 0)
     set(PROJECT_SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 endif()
 
-hunter_add_package(ethash)
-find_package(ethash CONFIG REQUIRED)
+FetchContent_Declare(
+    intx
+    URL https://github.com/chfast/intx/archive/v0.10.1.tar.gz
+    URL_HASH SHA1=168e0c2ff6760bd6467e25523cc0e68447358018
+)
+FetchContent_MakeAvailable(intx)
+
+FetchContent_Declare(
+    ethash
+    GIT_REPOSITORY https://github.com/chfast/ethash.git
+    GIT_TAG e08bd0fadb8785f7ccf1e2fb07b75f54fe47f92e
+)
+FetchContent_MakeAvailable(ethash)
+
+FetchContent_Declare(
+    GTest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
+    URL_HASH SHA1=2b28c2a3a30d86b1759543ef61fac3c4d69f8c4c
+)
+FetchContent_MakeAvailable(GTest)
 
 option(EVMC_TOOLS "Build EVMC test tools" ${EVMONE_TESTING})
 option(EVMC_INSTALL "Install EVMC" OFF)
