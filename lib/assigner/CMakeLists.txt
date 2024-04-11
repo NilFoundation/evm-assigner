@@ -19,11 +19,6 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 target_link_libraries(${PROJECT_NAME} INTERFACE
                       evmone)
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/nil/blueprint/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nil/blueprint)
-#evmc
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../evmc/include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 #evmone
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/execution_state.hpp
