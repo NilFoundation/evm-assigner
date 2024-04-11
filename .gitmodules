@@ -4,6 +4,3 @@
 [submodule "evm-benchmarks"]
 	path = test/evm-benchmarks
 	url = https://github.com/ipsilon/evm-benchmarks
-[submodule "lib/crypto3"]
-	path = lib/crypto3
-	url = ../../NilFoundation/crypto3.git
