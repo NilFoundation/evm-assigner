@@ -63,6 +63,9 @@
             gtest
             boost
             ethash
+          ];
+
+          propagatedBuildInputs = [
             deps.intx
             deps.evmc
             crypto3
