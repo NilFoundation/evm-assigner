@@ -11,6 +11,7 @@
     nil_zkllvm_blueprint = {
       url = "https://github.com/NilFoundation/zkllvm-blueprint";
       type = "git";
+      rev = "01964c21ab68e0cd77e08c0a9225f220a5b6bf2d";
       submodules = true;
     };
     intx = { url = "github:chfast/intx"; flake = false; };
