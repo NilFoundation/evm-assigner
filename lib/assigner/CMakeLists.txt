@@ -14,8 +14,9 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 
                            ${Boost_INCLUDE_DIRS})
 
+# TODO: link to blueprint and crypto3 here after fixing this in crypto3:
+# https://github.com/NilFoundation/crypto3/issues/175
 target_link_libraries(${PROJECT_NAME} INTERFACE
-                      crypto3::blueprint
                       evmone)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/nil/blueprint/
