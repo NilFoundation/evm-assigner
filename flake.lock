@@ -52,21 +52,43 @@
         "url": "https://github.com/NilFoundation/crypto3"
       }
     },
-    "nil_zkllvm_blueprint": {
+    "nil_crypto3_2": {
       "inputs": {
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1712833717,
-        "narHash": "sha256-NIIshx3znI5U01UTabsadrzL/aoPBAWmOQ8fuPO0a4Q=",
+        "lastModified": 1712603294,
+        "narHash": "sha256-0L7ir0E+jFv9dxmLV6Vxlf+st6BNaJrhRXyNCK3xPsY=",
         "ref": "refs/heads/master",
-        "rev": "6eb5feab3da2b5f85b137708620a33b45691c937",
-        "revCount": 1201,
+        "rev": "13909af052a998c92d2a6a96e0bcfd21156aed72",
+        "revCount": 701,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/NilFoundation/crypto3"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/NilFoundation/crypto3"
+      }
+    },
+    "nil_zkllvm_blueprint": {
+      "inputs": {
+        "nil_crypto3": "nil_crypto3_2",
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1712853518,
+        "narHash": "sha256-eTnjr51YYlU7PeFH6xJIpytaOne5NFHckLMj3RaxOlI=",
+        "ref": "refs/heads/master",
+        "rev": "01964c21ab68e0cd77e08c0a9225f220a5b6bf2d",
+        "revCount": 1204,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/NilFoundation/zkllvm-blueprint"
       },
       "original": {
+        "rev": "01964c21ab68e0cd77e08c0a9225f220a5b6bf2d",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/NilFoundation/zkllvm-blueprint"
@@ -90,20 +112,37 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1694180918,
-        "narHash": "sha256-LHvfU2B9DyzFBSrxLApBUbzIzcypw/kZKtz07wRc38E=",
+        "lastModified": 1708831307,
+        "narHash": "sha256-0iL/DuGjiUeck1zEaL+aIe2WvA3/cVhp/SlmTcOZXH4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f1944ba7b7c042528a58c6135453a0848f9183b7",
+        "rev": "5bf1cadb72ab4e77cb0b700dab76bcdaf88f706b",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
+        "ref": "nixos-23.11",
         "repo": "nixpkgs",
         "type": "github"
       }
     },
     "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1712741485,
+        "narHash": "sha256-bCs0+MSTra80oXAsnM6Oq62WsirOIaijQ/BbUY59tR4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b2cf36f43f9ef2ded5711b30b1f393ac423d8f72",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-23.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1712741485,
         "narHash": "sha256-bCs0+MSTra80oXAsnM6Oq62WsirOIaijQ/BbUY59tR4=",
@@ -125,7 +164,7 @@
         "intx": "intx",
         "nil_crypto3": "nil_crypto3",
         "nil_zkllvm_blueprint": "nil_zkllvm_blueprint",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_4"
       }
     }
   },
