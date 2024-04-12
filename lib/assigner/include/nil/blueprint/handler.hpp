@@ -31,28 +31,28 @@ namespace nil {
 
             void set_witness(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
                 if (table_idx >= m_assignments.size()) {
-                    m_assignments.push_back(m_desc);
+                    add_table(table_idx);
                 }
                 m_assignments[table_idx].witness(column_idx, row_idx) = to_field(v);
             }
 
             void set_constant(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
                 if (table_idx >= m_assignments.size()) {
-                    m_assignments.push_back(m_desc);
+                    add_table(table_idx);
                 }
                 m_assignments[table_idx].constant(column_idx, row_idx) = to_field(v);
             }
 
             void set_public_input(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
                 if (table_idx >= m_assignments.size()) {
-                    m_assignments.push_back(m_desc);
+                    add_table(table_idx);
                 }
                 m_assignments[table_idx].public_input(column_idx, row_idx) = to_field(v);
             }
 
             void set_selector(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
                 if (table_idx >= m_assignments.size()) {
-                    m_assignments.push_back(m_desc);
+                    add_table(table_idx);
                 }
                 m_assignments[table_idx].selector(column_idx, row_idx) = to_field(v);
             }
@@ -92,6 +92,13 @@ namespace nil {
             }
 
         private:
+            void add_table(size_t idx)
+            {
+                for (int i = m_assignments.size(); i <= idx; ++i)
+                {
+                    m_assignments.emplace_back(m_desc);
+                }
+            }
             static constexpr uint256 integral_to_uint256(
                 typename BlueprintFieldType::integral_type integral_value)
             {
