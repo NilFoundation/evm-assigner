@@ -29,7 +29,7 @@ namespace nil {
                 handler_ptr = std::make_shared<handler<BlueprintFieldType>>(desc, assignments);
             }
 
-            void evaluate(evmc_vm* c_vm, const evmc_host_interface* host, evmc_host_context* ctx,
+            evmc::Result evaluate(evmc_vm* c_vm, const evmc_host_interface* host, evmc_host_context* ctx,
                           evmc_revision rev, const evmc_message* msg, const uint8_t* code, size_t code_size) {
 
                 auto vm = static_cast<evmone::VM*>(c_vm);
@@ -40,7 +40,7 @@ namespace nil {
                 state->set_handler(handler_ptr);
 
                 auto res = execute(*vm, msg->gas, *state, code_analysis);
-                // TODO check res
+                return evmc::Result{res};
             }
 
         private:

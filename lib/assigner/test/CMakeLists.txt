@@ -4,7 +4,9 @@ include(GoogleTest)
 
 find_package(GTest CONFIG REQUIRED)
 
-add_executable(assigner_tests assigner_test.cpp)
+add_executable(assigner_tests
+               assigner_test.cpp
+               test_host.cpp)
 
 target_link_libraries(
         assigner_tests
