@@ -4,6 +4,7 @@
 // Based on example host
 
 #include <evmc/evmc.hpp>
+#include <nil/blueprint/assigner.hpp>
 
 #include <algorithm>
 #include <map>
@@ -36,16 +37,23 @@ using accounts = std::map<evmc::address, account>;
 
 }  // namespace evmc
 
-class ExampleHost : public evmc::Host
+using BlueprintFieldType = typename nil::crypto3::algebra::curves::pallas::base_field_type;
+using AssignerType = nil::blueprint::assigner<BlueprintFieldType>;
+
+class TestHost : public evmc::Host
 {
     evmc::accounts accounts;
     evmc_tx_context tx_context{};
+    AssignerType *assigner;
 
 public:
-    ExampleHost() = default;
-    explicit ExampleHost(evmc_tx_context& _tx_context) noexcept : tx_context{_tx_context} {}
-    ExampleHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts) noexcept
-      : accounts{_accounts}, tx_context{_tx_context}
+    TestHost() = default;
+    explicit TestHost(evmc_tx_context& _tx_context, AssignerType* _assigner) noexcept
+      : tx_context{_tx_context}, assigner(_assigner)
+    {}
+
+    TestHost(evmc_tx_context& _tx_context, AssignerType* _assigner, evmc::accounts& _accounts) noexcept
+      : accounts{_accounts}, tx_context{_tx_context}, assigner(_assigner)
     {}
 
     bool account_exists(const evmc::address& addr) const noexcept final
@@ -131,7 +139,19 @@ public:
 
     evmc::Result call(const evmc_message& msg) noexcept final
     {
-        return evmc::Result{EVMC_REVERT, msg.gas, 0, msg.input_data, msg.input_size};
+        switch (msg.kind)
+        {
+        case EVMC_CALL:
+        case EVMC_CALLCODE:
+        case EVMC_DELEGATECALL:
+            return handle_call(msg);
+        case EVMC_CREATE:
+        case EVMC_CREATE2:
+            return handle_create(msg);
+        default:
+            // Unexpected opcode
+            return evmc::Result{EVMC_INTERNAL_ERROR};
+        }
     }
 
     evmc_tx_context get_tx_context() const noexcept final { return tx_context; }
@@ -192,26 +212,18 @@ public:
     {
         accounts[addr].transient_storage[key] = value;
     }
+
+private:
+    evmc::Result handle_call(const evmc_message& msg);
+    evmc::Result handle_create(const evmc_message& msg);
+    evmc::address calculate_address(const evmc_message& msg);
 };
 
 
 extern "C" {
 
-const evmc_host_interface* example_host_get_interface()
-{
-    return &evmc::Host::get_interface();
-}
-
-evmc_host_context* example_host_create_context(evmc_tx_context tx_context)
-{
-    auto host = new ExampleHost{tx_context};
-    return host->to_context();
-}
-
-void example_host_destroy_context(evmc_host_context* context)
-{
-    delete evmc::Host::from_context<ExampleHost>(context);
-}
+evmc_host_context* test_host_create_context(evmc_tx_context tx_context, AssignerType *assigner);
+void test_host_destroy_context(evmc_host_context* context);
 }
 
 #endif  // EVM1_ASSIGNER_LIB_ASSIGNER_TEST_TEST_HOST_H_

@@ -13,7 +13,6 @@
 class AssignerTest : public testing::Test
 {
 public:
-    using BlueprintFieldType = typename nil::crypto3::algebra::curves::pallas::base_field_type;
     using ArithmetizationType = nil::crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
     static void SetUpTestSuite()
     {
@@ -54,18 +53,19 @@ public:
             .input_data = input,
             .input_size = sizeof(input),
             .value = value,
-            .create2_salt = 0,
+            .create2_salt = {0},
             .code_address = code_addr
         };
 
 
         host_interface = &evmc::Host::get_interface();
-        ctx = example_host_create_context(tx_context);
+        ctx = test_host_create_context(tx_context, assigner_ptr.get());
     }
 
     static void TearDownTestSuite()
     {
         assigner_ptr.reset();
+        test_host_destroy_context(ctx);
     }
 
     static std::unique_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner_ptr;
@@ -77,7 +77,7 @@ public:
     static struct evmc_message msg;
 };
 
-std::unique_ptr<nil::blueprint::assigner<AssignerTest::BlueprintFieldType>>
+std::unique_ptr<nil::blueprint::assigner<BlueprintFieldType>>
     AssignerTest::assigner_ptr;
 std::vector<nil::blueprint::assignment<AssignerTest::ArithmetizationType>>
     AssignerTest::assignments;
@@ -86,6 +86,8 @@ struct evmc_host_context* AssignerTest::ctx;
 struct evmc_vm* AssignerTest::vm;
 evmc_revision AssignerTest::rev = {};
 struct evmc_message AssignerTest::msg;
+
+using intx::operator""_u256;
 
 TEST_F(AssignerTest, conversions)
 {
@@ -118,7 +120,7 @@ TEST_F(AssignerTest, mul) {
 
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
     EXPECT_EQ(assignments[0].witness(0, 0), 8);
-    EXPECT_EQ(assignments[0].witness(1, 0), 4);
+    EXPECT_EQ(assignments[0].witness(0, 1), 4);
 }
 
 TEST_F(AssignerTest, callvalue_calldataload)
@@ -131,9 +133,9 @@ TEST_F(AssignerTest, callvalue_calldataload)
         evmone::OP_CALLDATALOAD,
     };
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
-    EXPECT_EQ(nil::blueprint::handler<BlueprintFieldType>::to_uint256(assignments[1].witness(0, 0)),
+    EXPECT_EQ(nil::blueprint::handler<BlueprintFieldType>::to_uint256(assignments[0].witness(1, 0)),
         intx::be::load<intx::uint256>(msg.value));
-    EXPECT_EQ(assignments[1].witness(0, 2), index);
+    EXPECT_EQ(assignments[0].witness(1, 1), index);
 }
 
 // TODO: test dataload instruction (for now its cost is not defined)
@@ -145,7 +147,7 @@ TEST_F(AssignerTest, DISABLED_dataload) {
         evmone::OP_DATALOAD,
     };
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
-    EXPECT_EQ(assignments[1].witness(0, 1), index);
+    EXPECT_EQ(assignments[0].witness(1, 2), index);
 }
 
 TEST_F(AssignerTest, mstore_load)
@@ -163,9 +165,9 @@ TEST_F(AssignerTest, mstore_load)
         evmone::OP_MLOAD,
     };
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
-    EXPECT_EQ(assignments[2].witness(0, 0), value);
-    EXPECT_EQ(assignments[2].witness(0, 1), index);
-    EXPECT_EQ(assignments[2].witness(0, 2), value);
+    EXPECT_EQ(assignments[0].witness(2, 0), value);
+    EXPECT_EQ(assignments[0].witness(2, 1), index);
+    EXPECT_EQ(assignments[0].witness(2, 2), value);
 }
 
 TEST_F(AssignerTest, sstore_load)
@@ -183,9 +185,9 @@ TEST_F(AssignerTest, sstore_load)
         evmone::OP_SLOAD,
     };
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
-    EXPECT_EQ(assignments[3].witness(0, 0), value);
-    EXPECT_EQ(assignments[3].witness(0, 1), key);
-    EXPECT_EQ(assignments[3].witness(0, 2), value);
+    EXPECT_EQ(assignments[0].witness(3, 0), value);
+    EXPECT_EQ(assignments[0].witness(3, 1), key);
+    EXPECT_EQ(assignments[0].witness(3, 2), value);
 }
 
 // TODO: test transient storage opcodes (for now their costs are not defined)
@@ -203,7 +205,132 @@ TEST_F(AssignerTest, DISABLED_tstore_load) {
         evmone::OP_TLOAD,
     };
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
-    EXPECT_EQ(assignments[3].witness(1, 0), value);
-    EXPECT_EQ(assignments[3].witness(1, 1), key);
-    EXPECT_EQ(assignments[3].witness(1, 2), value);
+    EXPECT_EQ(assignments[0].witness(4, 0), value);
+    EXPECT_EQ(assignments[0].witness(4, 1), key);
+    EXPECT_EQ(assignments[0].witness(4, 2), value);
+}
+
+TEST_F(AssignerTest, create) {
+
+    std::vector<uint8_t> code = {
+        // Create an account with 0 wei and no code
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_CREATE,
+
+        // Create an account with 9 wei and no code
+        evmone::OP_PUSH1,
+        1,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        9,
+        evmone::OP_CREATE,
+
+        // Create an account with 0 wei and 4 FF as code
+        evmone::OP_PUSH13,
+        // code 0x63FFFFFFFF60005260046000F3 will be inserted later
+
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_MSTORE,
+        evmone::OP_PUSH1,
+        2,
+        evmone::OP_PUSH1,
+        13,
+        evmone::OP_PUSH1,
+        19,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_CREATE,
+    };
+
+    auto push13_it = std::find(code.begin(), code.end(), evmone::OP_PUSH13);
+    ASSERT_NE(push13_it, code.end());
+    size_t push13_idx = push13_it - code.begin();
+
+    auto contract_code = 0x63FFFFFFFF60005260046000F3_u256;
+    auto byte_container = intx::be::store<evmc_bytes32>(contract_code);
+    // Code is in the last 13 bytes of the container
+    code.insert(code.begin() + push13_idx + 1, &byte_container.bytes[32-13], &byte_container.bytes[32]);
+
+    assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
+    // Check stored witnesses of MSTORE instruction at depth 1
+    EXPECT_EQ(assignments[1].witness(2, 1), 0);
+    EXPECT_EQ(assignments[1].witness(2, 0), 0xFFFFFFFF);
+}
+
+TEST_F(AssignerTest, call) {
+
+    std::vector<uint8_t> code = {
+        // Create a contract that creates an exception if first word of calldata is 0
+        evmone::OP_PUSH17,
+        // code 0x67600035600757FE5B60005260086018F3 will be inserted later
+        evmone::OP_PUSH1,
+        0,
+
+        evmone::OP_MSTORE,
+        evmone::OP_PUSH1,
+        17,
+        evmone::OP_PUSH1,
+        15,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_CREATE,
+
+        // Call with no parameters, return 0
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_DUP6,
+        evmone::OP_PUSH2,
+        0xFF,
+        0xFF,
+        evmone::OP_CALL,
+
+        // Call with non 0 calldata, returns success
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        32,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_PUSH1,
+        0,
+        evmone::OP_DUP7,
+        evmone::OP_PUSH2,
+        0xFF,
+        0xFF,
+        evmone::OP_CALL,
+    };
+
+    auto push17_it = std::find(code.begin(), code.end(), evmone::OP_PUSH17);
+    ASSERT_NE(push17_it, code.end());
+    size_t push17_idx = push17_it - code.begin();
+
+    auto contract_code = 0x67600035600757FE5B60005260086018F3_u256;
+    auto bytes = intx::be::store<evmc_bytes32>(contract_code);
+    // Code is in the last 13 bytes of the container
+    code.insert(code.begin() + push17_idx + 1, &bytes.bytes[32-17], &bytes.bytes[32]);
+
+    assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
+    // Check stored witness of CALLDATALOAD instruction at depth 1
+    EXPECT_EQ(assignments[1].witness(1, 1), 0);
 }
