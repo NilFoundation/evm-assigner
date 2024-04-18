@@ -1,23 +1,23 @@
-#include "test_host.h"
+#include "vm_host.h"
 
 #include <intx/intx.hpp>
 #include <ethash/keccak.hpp>
 
 extern "C" {
 
-evmc_host_context* test_host_create_context(evmc_tx_context tx_context, AssignerType *assigner)
+evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, AssignerType *assigner)
 {
-    auto host = new TestHost{tx_context, assigner};
+    auto host = new VMHost{tx_context, assigner};
     return host->to_context();
 }
 
-void test_host_destroy_context(evmc_host_context* context)
+void vm_host_destroy_context(evmc_host_context* context)
 {
-    delete evmc::Host::from_context<TestHost>(context);
+    delete evmc::Host::from_context<VMHost>(context);
 }
 }
 
-evmc::Result TestHost::handle_call(const evmc_message& msg)
+evmc::Result VMHost::handle_call(const evmc_message& msg)
 {
     evmc_vm * vm = evmc_create_evmone();
     auto account_iter = accounts.find(msg.code_address);
@@ -46,9 +46,14 @@ evmc::Result TestHost::handle_call(const evmc_message& msg)
     return res;
 }
 
-evmc::Result TestHost::handle_create(const evmc_message& msg)
+evmc::Result VMHost::handle_create(const evmc_message& msg)
 {
     evmc::address new_contract_address = calculate_address(msg);
+    if (accounts.find(new_contract_address) != accounts.end())
+    {
+        // Address collision
+        return evmc::Result{EVMC_FAILURE};
+    }
     accounts[new_contract_address] = {};
     if (msg.input_size == 0)
     {
@@ -72,7 +77,7 @@ evmc::Result TestHost::handle_create(const evmc_message& msg)
     return res;
 }
 
-evmc::address TestHost::calculate_address(const evmc_message& msg)
+evmc::address VMHost::calculate_address(const evmc_message& msg)
 {
     // TODO: Implement for CREATE opcode, for now the result is only correct for CREATE2
     // CREATE requires rlp encoding

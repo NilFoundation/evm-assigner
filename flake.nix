@@ -135,6 +135,7 @@
             clang_17
             ethash
             deps.intx
+            deps.evmc
             crypto3
             blueprint
           ];

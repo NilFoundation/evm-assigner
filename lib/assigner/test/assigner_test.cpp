@@ -6,7 +6,7 @@
 #include <evmc/evmc.hpp>
 #include <evmc/mocked_host.hpp>
 #include "instructions_opcodes.hpp"
-#include "test_host.h"
+#include "vm_host.h"
 
 #include <gtest/gtest.h>
 
@@ -59,13 +59,13 @@ public:
 
 
         host_interface = &evmc::Host::get_interface();
-        ctx = test_host_create_context(tx_context, assigner_ptr.get());
+        ctx = vm_host_create_context(tx_context, assigner_ptr.get());
     }
 
     static void TearDownTestSuite()
     {
         assigner_ptr.reset();
-        test_host_destroy_context(ctx);
+        vm_host_destroy_context(ctx);
     }
 
     static std::unique_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner_ptr;
