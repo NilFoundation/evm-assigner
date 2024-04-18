@@ -5,9 +5,9 @@ cmake_policy(SET CMP0063 NEW)
 
 option(BUILD_ASSIGNER_TESTS "Build unit tests" FALSE)
 
-add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME} STATIC src/vm_host.cpp)
 
-target_include_directories(${PROJECT_NAME} INTERFACE
+target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/include
                            ${include_dir}/evmone
                            ${CMAKE_CURRENT_SOURCE_DIR}/../evmone
@@ -16,7 +16,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 
 # TODO: link to blueprint and crypto3 here after fixing this in crypto3:
 # https://github.com/NilFoundation/crypto3/issues/175
-target_link_libraries(${PROJECT_NAME} INTERFACE
+target_link_libraries(${PROJECT_NAME} PUBLIC
                       evmone)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/nil/blueprint/

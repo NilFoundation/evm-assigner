@@ -1,5 +1,5 @@
-#ifndef EVM1_ASSIGNER_LIB_ASSIGNER_TEST_TEST_HOST_H_
-#define EVM1_ASSIGNER_LIB_ASSIGNER_TEST_TEST_HOST_H_
+#ifndef EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_VM_HOST_H_
+#define EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_VM_HOST_H_
 
 // Based on example host
 
@@ -40,19 +40,19 @@ using accounts = std::map<evmc::address, account>;
 using BlueprintFieldType = typename nil::crypto3::algebra::curves::pallas::base_field_type;
 using AssignerType = nil::blueprint::assigner<BlueprintFieldType>;
 
-class TestHost : public evmc::Host
+class VMHost : public evmc::Host
 {
     evmc::accounts accounts;
     evmc_tx_context tx_context{};
     AssignerType *assigner;
 
 public:
-    TestHost() = default;
-    explicit TestHost(evmc_tx_context& _tx_context, AssignerType* _assigner) noexcept
+    VMHost() = default;
+    explicit VMHost(evmc_tx_context& _tx_context, AssignerType* _assigner) noexcept
       : tx_context{_tx_context}, assigner(_assigner)
     {}
 
-    TestHost(evmc_tx_context& _tx_context, AssignerType* _assigner, evmc::accounts& _accounts) noexcept
+    VMHost(evmc_tx_context& _tx_context, AssignerType* _assigner, evmc::accounts& _accounts) noexcept
       : accounts{_accounts}, tx_context{_tx_context}, assigner(_assigner)
     {}
 
@@ -222,8 +222,8 @@ private:
 
 extern "C" {
 
-evmc_host_context* test_host_create_context(evmc_tx_context tx_context, AssignerType *assigner);
-void test_host_destroy_context(evmc_host_context* context);
+evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, AssignerType *assigner);
+void vm_host_destroy_context(evmc_host_context* context);
 }
 
-#endif  // EVM1_ASSIGNER_LIB_ASSIGNER_TEST_TEST_HOST_H_
+#endif  // EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_VM_HOST_H_
