@@ -7,10 +7,14 @@ option(BUILD_ASSIGNER_TESTS "Build unit tests" FALSE)
 
 add_library(${PROJECT_NAME} STATIC src/vm_host.cpp)
 
+find_package(Boost COMPONENTS REQUIRED filesystem log log_setup program_options thread system)
+
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/include
                            ${include_dir}/evmone
                            ${CMAKE_CURRENT_SOURCE_DIR}/../evmone
+                           ${BLUEPRINT_DIR}/include
+                           ${CRYPTO3_DIR}/include
 
                            ${Boost_INCLUDE_DIRS})
 
@@ -19,10 +23,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       evmone)
 
+# Install assigner headers
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/nil/blueprint/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nil/blueprint)
+# Install library
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-#evmone
+# Install evmone headers
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/execution_state.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/tracing.hpp
