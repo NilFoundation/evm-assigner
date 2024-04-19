@@ -17,6 +17,7 @@ Created by members of the [Ipsilon] (ex-[Ewasm]) team.
 
 - [evmc](https://github.com/ethereum/evmc)
 - [intx](https://github.com/chfast/intx)
+- [ethash](https://github.com/chfast/ethash)
 - [blueprint](https://github.com/NilFoundation/zkllvm-blueprint)
 - [crypto3](https://github.com/NilFoundation/crypto3)
 
@@ -40,12 +41,18 @@ Run tests:
 nix flake check
 ```
 
-## Build
+## Build without Nix
+
+### Provide CMAKE_PREFIX_PATH with paths to dependent modules
+```bash
+export CMAKE_PREFIX_PATH=$EVMC_PATH:$INTX_PATH:$ETHASH_PATH:$BLUEPRINT_PATH:$CRYPTO3_PATH
+```
+Note: this variable could be retrieved from Nix shell environment
 
 ### Configure cmake
 
 ```bash
-cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_ASSIGNER_TESTS=TRUE
+cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_ASSIGNER_TESTS=TRUE -DHUNTER_ENABLED=OFF
 
 ```
 
