@@ -24,8 +24,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                       evmone)
 
 # Install assigner headers
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/nil/blueprint/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nil/blueprint)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 # Install library
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 

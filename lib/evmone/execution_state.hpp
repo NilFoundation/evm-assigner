@@ -7,6 +7,7 @@
 #include <intx/intx.hpp>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <nil/blueprint/handler_base.hpp>
 
