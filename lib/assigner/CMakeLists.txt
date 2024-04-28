@@ -24,8 +24,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                       evmone)
 
 # Install assigner headers
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/nil/blueprint/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nil/blueprint)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 # Install library
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
@@ -35,6 +35,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/tracing.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/eof.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/instructions_opcodes.hpp
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if(BUILD_ASSIGNER_TESTS)
