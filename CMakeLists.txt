@@ -145,4 +145,21 @@ install(TARGETS ${install_targets} EXPORT evmoneTargets
 install(DIRECTORY ${include_dir}/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+set(CONFIG_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/evmone-assigner)
+install(EXPORT evmoneTargets DESTINATION ${CONFIG_PATH})
+install(EXPORT assignerTargets DESTINATION ${CONFIG_PATH})
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    cmake/Config.cmake.in
+    evmone-assigner-config.cmake
+    INSTALL_DESTINATION ${CONFIG_PATH}
+)
+
+install(
+    FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/evmone-assigner-config.cmake
+    DESTINATION ${CONFIG_PATH}
+)
+
 cable_add_archive_package()

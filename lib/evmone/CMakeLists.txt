@@ -30,11 +30,11 @@ add_library(evmone ${evmone_sources})
 get_target_property(FPRINTER_DIR fprinter SOURCE_DIR)
 
 target_compile_features(evmone PUBLIC cxx_std_20)
-target_link_libraries(evmone PUBLIC evmc::evmc intx::intx ethash::keccak)
+target_link_libraries(evmone PUBLIC evmc::evmc intx::intx PRIVATE ethash::keccak)
 target_include_directories(evmone PUBLIC
     $<BUILD_INTERFACE:${include_dir}>$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    ${FPRINTER_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../assigner/include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../assigner/include>
+    PRIVATE ${FPRINTER_DIR}
 )
 
 if(EVMONE_X86_64_ARCH_LEVEL GREATER_EQUAL 2)

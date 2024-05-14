@@ -6,11 +6,13 @@
     nil_crypto3 = {
       url = "https://github.com/NilFoundation/crypto3";
       type = "git";
+      rev = "3de0775395bf06c0e4969ff7f921cc7523904269";
       submodules = true;
     };
     nil_zkllvm_blueprint = {
       url = "https://github.com/NilFoundation/zkllvm-blueprint";
       type = "git";
+      rev = "ba5c1638ee5c222c7572cac511073cfc19b0a5ee";
       submodules = true;
     };
     intx = { url = "github:chfast/intx"; flake = false; };
@@ -61,12 +63,12 @@
             ninja
             gtest
             boost
-            ethash
           ];
 
           propagatedBuildInputs = [
             deps.intx
             deps.evmc
+            pkgs.ethash
             crypto3
             blueprint
           ];
