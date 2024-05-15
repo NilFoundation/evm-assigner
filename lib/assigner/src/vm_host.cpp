@@ -1,13 +1,14 @@
 #include "vm_host.h"
 
 #include <intx/intx.hpp>
+#include <evmone/evmone.h>
 #include <ethash/keccak.hpp>
 
 extern "C" {
 
-evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, AssignerType *assigner)
+evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::blueprint::handler_base> handler)
 {
-    auto host = new VMHost{tx_context, assigner};
+    auto host = new VMHost{tx_context, handler};
     return host->to_context();
 }
 
@@ -41,7 +42,7 @@ evmc::Result VMHost::handle_call(const evmc_message& msg)
         return evmc::Result{EVMC_SUCCESS, msg.gas, 0, msg.input_data, msg.input_size};
     }
     // TODO: handle precompiled contracts
-    auto res = assigner->evaluate(vm, &get_interface(), to_context(),
+    auto res = evaluate(handler, vm, &get_interface(), to_context(),
         EVMC_LATEST_STABLE_REVISION, &msg, acc.code.data(), acc.code.size());
     return res;
 }
@@ -65,7 +66,7 @@ evmc::Result VMHost::handle_create(const evmc_message& msg)
     init_msg.recipient = new_contract_address;
     init_msg.sender = msg.sender;
     init_msg.input_size = 0;
-    auto res = assigner->evaluate(vm.get_raw_pointer(), &get_interface(), to_context(),
+    auto res = evaluate(handler, vm.get_raw_pointer(), &get_interface(), to_context(),
         EVMC_LATEST_STABLE_REVISION, &init_msg, msg.input_data, msg.input_size);
 
     if (res.status_code == EVMC_SUCCESS)

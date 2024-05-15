@@ -22,54 +22,44 @@ namespace nil {
             using ArithmetizationType = crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
             using value_type = typename BlueprintFieldType::value_type;
 
-            handler(crypto3::zk::snark::plonk_table_description<BlueprintFieldType> desc,
-                    std::vector<assignment<ArithmetizationType>> &assignments):
-                    m_assignments(assignments),
-                    m_desc(desc) {
+            handler(std::vector<assignment<ArithmetizationType>> &assignments):
+                    m_assignments(assignments) {
 
             }
 
-            void set_witness(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
-                if (table_idx >= m_assignments.size()) {
-                    add_table(table_idx);
-                }
+            void set_witness(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx, const uint256& v) override {
+                assert(table_idx < m_assignments.size());
                 m_assignments[table_idx].witness(column_idx, row_idx) = to_field(v);
             }
 
-            void set_constant(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
-                if (table_idx >= m_assignments.size()) {
-                    add_table(table_idx);
-                }
+            void set_constant(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx, const uint256& v) override {
+                assert(table_idx < m_assignments.size());
                 m_assignments[table_idx].constant(column_idx, row_idx) = to_field(v);
             }
 
-            void set_public_input(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
-                if (table_idx >= m_assignments.size()) {
-                    add_table(table_idx);
-                }
+            void set_public_input(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx, const uint256& v) override {
+                assert(table_idx < m_assignments.size());
                 m_assignments[table_idx].public_input(column_idx, row_idx) = to_field(v);
             }
 
-            void set_selector(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx, const uint256& v) override {
-                if (table_idx >= m_assignments.size()) {
-                    add_table(table_idx);
-                }
+            void set_selector(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx, const uint256& v) override {
+                assert(table_idx < m_assignments.size());
                 m_assignments[table_idx].selector(column_idx, row_idx) = to_field(v);
             }
 
-            uint256 witness(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx) override {
+            uint256 witness(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx) override {
                 return to_uint256(m_assignments[table_idx].witness(column_idx, row_idx));
             }
 
-            uint256 constant(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx) override {
+            uint256 constant(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx) override {
                 return to_uint256(m_assignments[table_idx].constant(column_idx, row_idx));
             }
 
-            uint256 public_input(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx) override {
+            uint256 public_input(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx) override {
                 return to_uint256(m_assignments[table_idx].public_input(column_idx, row_idx));
             }
 
-            uint256 selector(std::size_t table_idx, std::size_t column_idx, std::size_t row_idx) override {
+            uint256 selector(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx) override {
                 return to_uint256(m_assignments[table_idx].selector(column_idx, row_idx));
             }
 
@@ -92,13 +82,6 @@ namespace nil {
             }
 
         private:
-            void add_table(size_t idx)
-            {
-                for (int i = m_assignments.size(); i <= idx; ++i)
-                {
-                    m_assignments.emplace_back(m_desc);
-                }
-            }
             static constexpr uint256 integral_to_uint256(
                 typename BlueprintFieldType::integral_type integral_value)
             {
@@ -118,7 +101,6 @@ namespace nil {
             static constexpr uint256 modulus = integral_to_uint256(BlueprintFieldType::modulus);
 
             std::vector<assignment<ArithmetizationType>> &m_assignments;
-            crypto3::zk::snark::plonk_table_description<BlueprintFieldType> m_desc;
         };
 
     }     // namespace blueprint
