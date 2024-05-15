@@ -168,8 +168,8 @@ inline void add(StackTop stack) noexcept
 
 inline void mul(StackTop stack, ExecutionState& state) noexcept
 {
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 0, 0, stack[0]);
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 0, 1, stack[1]);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 0, 0, stack[0]);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 0, 1, stack[1]);
     stack.top() *= stack.pop();
 }
 
@@ -412,14 +412,14 @@ inline void caller(StackTop stack, ExecutionState& state) noexcept
 inline void callvalue(StackTop stack, ExecutionState& state) noexcept
 {
     auto val = intx::be::load<uint256>(state.msg->value);
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 1, 0, val);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 1, 0, val);
     stack.push(val);
 }
 
 inline void calldataload(StackTop stack, ExecutionState& state) noexcept
 {
     auto& index = stack.top();
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 1, 1, index);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 1, 1, index);
 
     if (state.msg->input_size < index)
         index = 0;
@@ -685,7 +685,7 @@ inline Result mload(StackTop stack, int64_t gas_left, ExecutionState& state) noe
         return {EVMC_OUT_OF_GAS, gas_left};
 
     index = intx::be::unsafe::load<T>(&state.memory[static_cast<size_t>(index)]);
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 2, 2, index);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 2, 2, index);
     return {EVMC_SUCCESS, gas_left};
 }
 
@@ -695,8 +695,8 @@ inline Result mstore(StackTop stack, int64_t gas_left, ExecutionState& state) no
     const auto& index = stack.pop();
     const auto& value = stack.pop();
 
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 2, 0, value);
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 2, 1, index);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 2, 0, value);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 2, 1, index);
 
     if (!check_memory(gas_left, state.memory, index, 32))
         return {EVMC_OUT_OF_GAS, gas_left};
@@ -805,7 +805,7 @@ inline void tload(StackTop stack, ExecutionState& state) noexcept
     const auto key = intx::be::store<evmc::bytes32>(x);
     const auto value = state.host.get_transient_storage(state.msg->recipient, key);
     x = intx::be::load<uint256>(value);
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 4, 2, x);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 4, 2, x);
 }
 
 inline Result tstore(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
@@ -813,8 +813,8 @@ inline Result tstore(StackTop stack, int64_t gas_left, ExecutionState& state) no
     if (state.in_static_mode())
         return {EVMC_STATIC_MODE_VIOLATION, 0};
 
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 4, 0, stack[1]);
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 4, 1, stack[0]);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 4, 0, stack[1]);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 4, 1, stack[0]);
     const auto key = intx::be::store<evmc::bytes32>(stack.pop());
     const auto value = intx::be::store<evmc::bytes32>(stack.pop());
     state.host.set_transient_storage(state.msg->recipient, key, value);
@@ -1003,7 +1003,7 @@ inline Result mcopy(StackTop stack, int64_t gas_left, ExecutionState& state) noe
 inline void dataload(StackTop stack, ExecutionState& state) noexcept
 {
     auto& index = stack.top();
-    state.m_handler->set_witness(static_cast<size_t>(state.msg->depth), 1, 2, index);
+    state.m_handler->set_witness(static_cast<std::uint32_t>(state.msg->depth), 1, 2, index);
 
     if (state.data.size() < index)
         index = 0;

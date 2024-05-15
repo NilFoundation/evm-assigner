@@ -4,6 +4,7 @@
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
 #include <evmc/evmc.hpp>
+#include <evmone/evmone.h>
 #include <evmc/mocked_host.hpp>
 #include "instructions_opcodes.hpp"
 #include "vm_host.h"
@@ -13,6 +14,7 @@
 class AssignerTest : public testing::Test
 {
 public:
+    using BlueprintFieldType = typename nil::crypto3::algebra::curves::pallas::base_field_type;
     using ArithmetizationType = nil::crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
     static void SetUpTestSuite()
     {
@@ -25,8 +27,11 @@ public:
         nil::crypto3::zk::snark::plonk_table_description<BlueprintFieldType> desc(
             WitnessColumns, PublicInputColumns, ConstantColumns, SelectorColumns);
 
+        assignments.emplace_back(desc);
+        assignments.emplace_back(desc); // for check create, call op codes, where message depth = 1
+
         assigner_ptr =
-            std::make_unique<nil::blueprint::assigner<BlueprintFieldType>>(desc, assignments);
+            std::make_unique<nil::blueprint::assigner<BlueprintFieldType>>(assignments);
 
         vm = evmc_create_evmone();
 
@@ -59,7 +64,7 @@ public:
 
 
         host_interface = &evmc::Host::get_interface();
-        ctx = vm_host_create_context(tx_context, assigner_ptr.get());
+        ctx = vm_host_create_context(tx_context, assigner_ptr->get_handler());
     }
 
     static void TearDownTestSuite()
@@ -77,7 +82,7 @@ public:
     static struct evmc_message msg;
 };
 
-std::unique_ptr<nil::blueprint::assigner<BlueprintFieldType>>
+std::unique_ptr<nil::blueprint::assigner<AssignerTest::BlueprintFieldType>>
     AssignerTest::assigner_ptr;
 std::vector<nil::blueprint::assignment<AssignerTest::ArithmetizationType>>
     AssignerTest::assignments;
@@ -255,12 +260,12 @@ TEST_F(AssignerTest, create) {
 
     auto push13_it = std::find(code.begin(), code.end(), evmone::OP_PUSH13);
     ASSERT_NE(push13_it, code.end());
-    size_t push13_idx = push13_it - code.begin();
+    size_t push13_idx = static_cast<size_t>(push13_it - code.begin());
 
     auto contract_code = 0x63FFFFFFFF60005260046000F3_u256;
     auto byte_container = intx::be::store<evmc_bytes32>(contract_code);
     // Code is in the last 13 bytes of the container
-    code.insert(code.begin() + push13_idx + 1, &byte_container.bytes[32-13], &byte_container.bytes[32]);
+    code.insert(code.begin() + static_cast<long int>(push13_idx) + 1, &byte_container.bytes[32-13], &byte_container.bytes[32]);
 
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
     // Check stored witnesses of MSTORE instruction at depth 1
@@ -323,12 +328,12 @@ TEST_F(AssignerTest, call) {
 
     auto push17_it = std::find(code.begin(), code.end(), evmone::OP_PUSH17);
     ASSERT_NE(push17_it, code.end());
-    size_t push17_idx = push17_it - code.begin();
+    size_t push17_idx = static_cast<size_t>(push17_it - code.begin());
 
     auto contract_code = 0x67600035600757FE5B60005260086018F3_u256;
     auto bytes = intx::be::store<evmc_bytes32>(contract_code);
     // Code is in the last 13 bytes of the container
-    code.insert(code.begin() + push17_idx + 1, &bytes.bytes[32-17], &bytes.bytes[32]);
+    code.insert(code.begin() + static_cast<long int>(push17_idx) + 1, &bytes.bytes[32-17], &bytes.bytes[32]);
 
     assigner_ptr->evaluate(vm, host_interface, ctx, rev, &msg, code.data(), code.size());
     // Check stored witness of CALLDATALOAD instruction at depth 1

@@ -4,11 +4,12 @@
 // Based on example host
 
 #include <evmc/evmc.hpp>
-#include <nil/blueprint/assigner.hpp>
+#include <nil/blueprint/handler_base.hpp>
 
 #include <algorithm>
 #include <map>
 #include <vector>
+#include <memory>
 
 using namespace evmc::literals;
 
@@ -37,23 +38,20 @@ using accounts = std::map<evmc::address, account>;
 
 }  // namespace evmc
 
-using BlueprintFieldType = typename nil::crypto3::algebra::curves::pallas::base_field_type;
-using AssignerType = nil::blueprint::assigner<BlueprintFieldType>;
-
 class VMHost : public evmc::Host
 {
     evmc::accounts accounts;
     evmc_tx_context tx_context{};
-    AssignerType *assigner;
+    std::shared_ptr<nil::blueprint::handler_base> handler;
 
 public:
     VMHost() = default;
-    explicit VMHost(evmc_tx_context& _tx_context, AssignerType* _assigner) noexcept
-      : tx_context{_tx_context}, assigner(_assigner)
+    explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::blueprint::handler_base> _handler) noexcept
+      : tx_context{_tx_context}, handler{_handler}
     {}
 
-    VMHost(evmc_tx_context& _tx_context, AssignerType* _assigner, evmc::accounts& _accounts) noexcept
-      : accounts{_accounts}, tx_context{_tx_context}, assigner(_assigner)
+    VMHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts, std::shared_ptr<nil::blueprint::handler_base> _handler) noexcept
+      : accounts{_accounts}, tx_context{_tx_context}, handler{_handler}
     {}
 
     bool account_exists(const evmc::address& addr) const noexcept final
@@ -222,7 +220,7 @@ private:
 
 extern "C" {
 
-evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, AssignerType *assigner);
+evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::blueprint::handler_base> handler);
 void vm_host_destroy_context(evmc_host_context* context);
 }
 
