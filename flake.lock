@@ -1,60 +1,28 @@
 {
   "nodes": {
-    "evmc": {
-      "flake": false,
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
       "locked": {
-        "lastModified": 1711484129,
-        "narHash": "sha256-yqEbtRA4GiQ/pjaH2+ZPfnthgt9gLPY4lWPTYbBWJhE=",
-        "owner": "ethereum",
-        "repo": "evmc",
-        "rev": "fc86231960348790bbee8254a809bf1f9d7c8517",
+        "lastModified": 1710146030,
+        "narHash": "sha256-SZ5L6eA7HJ/nmkzGG7/ISclqe6oZdOZTNoesiInkXPQ=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "b1d9ab70662946ef0850d488da1c9019f3a9752a",
         "type": "github"
       },
       "original": {
-        "owner": "ethereum",
-        "repo": "evmc",
-        "type": "github"
-      }
-    },
-    "intx": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1704400684,
-        "narHash": "sha256-XNpSO++FuG27Bgf5My9eJ/zrQlsWcGajfq4Y2UI2Kpk=",
-        "owner": "chfast",
-        "repo": "intx",
-        "rev": "e0732242e36b3bb08cc8cc23445b2bee7c28b9d0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "chfast",
-        "repo": "intx",
+        "owner": "numtide",
+        "repo": "flake-utils",
         "type": "github"
       }
     },
     "nil_crypto3": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
-      },
-      "locked": {
-        "lastModified": 1712603294,
-        "narHash": "sha256-0L7ir0E+jFv9dxmLV6Vxlf+st6BNaJrhRXyNCK3xPsY=",
-        "ref": "refs/heads/master",
-        "rev": "13909af052a998c92d2a6a96e0bcfd21156aed72",
-        "revCount": 701,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/NilFoundation/crypto3"
-      },
-      "original": {
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/NilFoundation/crypto3"
-      }
-    },
-    "nil_crypto3_2": {
-      "inputs": {
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1712603294,
@@ -74,8 +42,12 @@
     },
     "nil_zkllvm_blueprint": {
       "inputs": {
-        "nil_crypto3": "nil_crypto3_2",
-        "nixpkgs": "nixpkgs_3"
+        "nil_crypto3": [
+          "nil_crypto3"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1713444891,
@@ -93,55 +65,30 @@
         "url": "https://github.com/NilFoundation/zkllvm-blueprint"
       }
     },
+    "nix-3rdparty": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1717421108,
+        "narHash": "sha256-TuMP6k7KFqAiauPajsWERrmj2Hw3UIcxXUTUUgc5uhw=",
+        "owner": "NilFoundation",
+        "repo": "nix-3rdparty",
+        "rev": "39c6b74a759804dc581c8d15990e6a10ae9d2027",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NilFoundation",
+        "repo": "nix-3rdparty",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
-      "locked": {
-        "lastModified": 1708831307,
-        "narHash": "sha256-0iL/DuGjiUeck1zEaL+aIe2WvA3/cVhp/SlmTcOZXH4=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "5bf1cadb72ab4e77cb0b700dab76bcdaf88f706b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-23.11",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1708831307,
-        "narHash": "sha256-0iL/DuGjiUeck1zEaL+aIe2WvA3/cVhp/SlmTcOZXH4=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "5bf1cadb72ab4e77cb0b700dab76bcdaf88f706b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-23.11",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_3": {
-      "locked": {
-        "lastModified": 1712741485,
-        "narHash": "sha256-bCs0+MSTra80oXAsnM6Oq62WsirOIaijQ/BbUY59tR4=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "b2cf36f43f9ef2ded5711b30b1f393ac423d8f72",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-23.11",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_4": {
       "locked": {
         "lastModified": 1712741485,
         "narHash": "sha256-bCs0+MSTra80oXAsnM6Oq62WsirOIaijQ/BbUY59tR4=",
@@ -159,11 +106,26 @@
     },
     "root": {
       "inputs": {
-        "evmc": "evmc",
-        "intx": "intx",
+        "flake-utils": "flake-utils",
         "nil_crypto3": "nil_crypto3",
         "nil_zkllvm_blueprint": "nil_zkllvm_blueprint",
-        "nixpkgs": "nixpkgs_4"
+        "nix-3rdparty": "nix-3rdparty",
+        "nixpkgs": "nixpkgs"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
       }
     }
   },

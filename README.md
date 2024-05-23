@@ -35,6 +35,12 @@ Build package:
 nix build
 ```
 
+Build debug package:
+
+```bash
+nix build .#debug
+```
+
 Run tests:
 
 ```bash
