@@ -32,7 +32,23 @@
         };
       });
 
-      nonFlakeDependencies = { pkgs, repos, enable_debug }:
+      resolvePackage = system: is_debug: input:
+        let
+          base = input.packages.${system};
+          debug_alternative = if base ? debug then base.debug else base.default;
+          release_alternative = if base ? release then base.release else base.default;
+        in
+          if is_debug then debug_alternative else release_alternative;
+
+      flake_inputs = [
+        nil_crypto3
+        nil_zkllvm_blueprint
+      ];
+
+      flake_packages = pkgs: is_debug:
+        map (resolvePackage pkgs.system is_debug) flake_inputs;
+
+      nonFlakeDependencies = { pkgs, enable_debug }:
         let
           lib = pkgs.lib;
           stdenv = pkgs.gcc13Stdenv;
@@ -49,60 +65,46 @@
           };
         };
 
-      makeReleaseBuild = { pkgs }:
+      commonBuildInputs = pkgs: with pkgs; [
+        cmake
+        ninja
+        gtest
+        boost
+      ];
+
+      inputsToPropagate = pkgs: enable_debug:
         let
-          deps = nonFlakeDependencies { enable_debug = false; inherit repos pkgs; };
-          crypto3 = nil_crypto3.packages.${pkgs.system}.default;
-          blueprint = nil_zkllvm_blueprint.packages.${pkgs.system}.default;
+          resolvedDeps = nonFlakeDependencies {inherit pkgs enable_debug; };
         in
+          with resolvedDeps; [ intx evmc ] ++ [ pkgs.ethash ] ++ flake_packages pkgs enable_debug;
+
+      allBuildInputs = pkgs: enable_debug: commonBuildInputs pkgs ++ inputsToPropagate pkgs enable_debug;
+
+      makePackage = { pkgs, enable_debug ? false }:
         pkgs.gcc13Stdenv.mkDerivation {
-          name = "EVM-assigner";
+          name = "EVM-assigner${if enable_debug then "-debug" else ""}";
 
-          buildInputs = with pkgs; [
-            cmake
-            ninja
-            gtest
-            boost
-          ];
+          buildInputs = commonBuildInputs pkgs;
 
-          propagatedBuildInputs = [
-            deps.intx
-            deps.evmc
-            pkgs.ethash
-            crypto3
-            blueprint
-          ];
+          propagatedBuildInputs = inputsToPropagate pkgs false;
 
           src = self;
+
+          cmakeBuildType = if enable_debug then "Debug" else "Release";
 
           cmakeFlags = [
             "-DHUNTER_ENABLED=OFF" # TODO: this will be removed after we get rid of Hunter
           ];
 
           doCheck = false;
+          dontStrip = enable_debug;
         };
 
-      makeTests = { pkgs }:
-        let
-          deps = nonFlakeDependencies { enable_debug = false; inherit repos pkgs; };
-          crypto3 = nil_crypto3.packages.${pkgs.system}.default;
-          blueprint = nil_zkllvm_blueprint.packages.${pkgs.system}.default;
-        in
+      makeTests = { pkgs, enable_debug ? false }:
         pkgs.gcc13Stdenv.mkDerivation {
-          # TODO: rewrite this using overrideAttr on makeReleaseBuild
           name = "EVM-assigner-tests";
 
-          buildInputs = with pkgs; [
-            cmake
-            ninja
-            gtest
-            boost
-            ethash
-            deps.intx
-            deps.evmc
-            crypto3
-            blueprint
-          ];
+          buildInputs = allBuildInputs pkgs enable_debug;
 
           src = self;
 
@@ -122,25 +124,9 @@
           '';
         };
 
-      makeDevShell = { pkgs }:
-        let
-          deps = nonFlakeDependencies { enable_debug = true; inherit repos pkgs; };
-          crypto3 = nil_crypto3.packages.${pkgs.system}.default;
-          blueprint = nil_zkllvm_blueprint.packages.${pkgs.system}.default;
-        in
+      makeDevShell = { pkgs, enable_debug ? false }:
         pkgs.mkShell {
-          buildInputs = with pkgs; [
-            cmake
-            ninja
-            gtest
-            boost
-            clang_17
-            ethash
-            deps.intx
-            deps.evmc
-            crypto3
-            blueprint
-          ];
+          buildInputs = allBuildInputs pkgs false;
 
           shellHook = ''
             echo "evm-assigner dev environment activated"
@@ -148,7 +134,11 @@
         };
     in
     {
-      packages = forAllSystems ({ pkgs }: { default = makeReleaseBuild { inherit pkgs; }; });
+      packages = forAllSystems ({ pkgs }: rec {
+        release = makePackage { inherit pkgs; };
+        debug = makePackage { enable_debug = true; inherit pkgs; };
+        default = release;
+        });
       checks = forAllSystems ({ pkgs }: { default = makeTests { inherit pkgs; }; });
       devShells = forAllSystems ({ pkgs }: { default = makeDevShell { inherit pkgs; }; });
     };
