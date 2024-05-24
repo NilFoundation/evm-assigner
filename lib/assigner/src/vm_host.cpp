@@ -21,14 +21,20 @@ void vm_host_destroy_context(evmc_host_context* context)
 evmc::Result VMHost::handle_call(const evmc_message& msg)
 {
     evmc_vm * vm = evmc_create_evmone();
+    auto sender_iter = accounts.find(msg.sender);
+    if (sender_iter == accounts.end())
+    {
+        // Sender account does not exist
+        return evmc::Result{EVMC_INTERNAL_ERROR};
+    }
+    auto &sender_acc = sender_iter->second;
     auto account_iter = accounts.find(msg.code_address);
-    auto &sender_acc = accounts[msg.sender];
     if (account_iter == accounts.end())
     {
         // Create account
         accounts[msg.code_address] = {};
     }
-    auto& acc = account_iter->second;
+    auto& acc = accounts[msg.code_address];
     if (msg.kind == EVMC_CALL) {
         auto value_to_transfer = intx::be::load<intx::uint256>(msg.value);
         auto balance = intx::be::load<intx::uint256>(sender_acc.balance);
