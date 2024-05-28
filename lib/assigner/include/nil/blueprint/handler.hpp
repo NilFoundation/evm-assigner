@@ -8,7 +8,6 @@
 #ifndef EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_HANDLER_HPP_
 #define EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_HANDLER_HPP_
 
-#include <nil/blueprint/handler_base.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
 namespace nil {

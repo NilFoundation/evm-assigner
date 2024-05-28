@@ -64,7 +64,7 @@ public:
 
 
         host_interface = &evmc::Host::get_interface();
-        ctx = vm_host_create_context(tx_context, assigner_ptr->get_handler());
+        ctx = vm_host_create_context(tx_context, assigner_ptr);
     }
 
     static void TearDownTestSuite()
@@ -73,7 +73,7 @@ public:
         vm_host_destroy_context(ctx);
     }
 
-    static std::unique_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner_ptr;
+    static std::unique_ptr<nil::blueprint::assigner_interace> assigner_ptr;
     static std::vector<nil::blueprint::assignment<ArithmetizationType>> assignments;
     static const struct evmc_host_interface* host_interface;
     static struct evmc_host_context* ctx;

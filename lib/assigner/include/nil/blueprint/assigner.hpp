@@ -8,14 +8,19 @@
 #ifndef EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ASSERTS_HPP_
 #define EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ASSERTS_HPP_
 
+#include <vm.hpp>
+#include <baseline.hpp>
+#include <execution_state.hpp>
+#include <intx/intx.hpp>
 #include <nil/blueprint/handler.hpp>
+#include <nil/blueprint/assigner_interface.hpp>
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 
 namespace nil {
     namespace blueprint {
 
         template<typename BlueprintFieldType>
-        struct assigner {
+        struct assigner : public assigner_interface {
 
             using ArithmetizationType = crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
 
@@ -23,18 +28,22 @@ namespace nil {
                 handler_ptr = std::make_shared<handler<BlueprintFieldType>>(assignments);
             }
 
-            evmc::Result evaluate(evmc_vm* c_vm, const evmc_host_interface* host, evmc_host_context* ctx,
+            evmc::Result evaluate(evmc_vm* c_vm, evmc_host_context* ctx,
                           evmc_revision rev, const evmc_message* msg, const uint8_t* code, size_t code_size) {
-                return nil::blueprint::evaluate(handler_ptr, c_vm, host, ctx, rev, msg, code, code_size);
-            }
+                auto vm = static_cast<evmone::VM*>(c_vm);
+                const evmone::bytes_view container{code, code_size};
+                const auto code_analysis = evmone::baseline::analyze(rev, container);
+                const auto data = code_analysis.eof_header.get_data(container);
+                auto state = std::make_unique<evmone::ExecutionState>(*msg, rev, *host, ctx, container, data);
+                state->set_handler(handler_ptr);
 
-            std::shared_ptr<handler_base> get_handler() {
-                return handler_ptr;
+                auto res = execute(*vm, msg->gas, *state, code_analysis);
+                return evmc::Result{res};
             }
 
         private:
 
-            std::shared_ptr<handler_base> handler_ptr;
+            std::shared_ptr<handler> handler_ptr;
         };
 
     }     // namespace blueprint

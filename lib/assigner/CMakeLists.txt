@@ -5,7 +5,7 @@ cmake_policy(SET CMP0063 NEW)
 
 option(BUILD_ASSIGNER_TESTS "Build unit tests" FALSE)
 
-add_library(${PROJECT_NAME} STATIC src/vm_host.cpp src/handler_base.cpp)
+add_library(${PROJECT_NAME} STATIC src/vm_host.cpp)
 
 find_package(Boost COMPONENTS REQUIRED filesystem log log_setup program_options thread system)
 

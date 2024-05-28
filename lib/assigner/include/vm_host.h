@@ -4,7 +4,7 @@
 // Based on example host
 
 #include <evmc/evmc.hpp>
-#include <nil/blueprint/handler_base.hpp>
+#include <nil/blueprint/assigner_interface.hpp>
 
 #include <algorithm>
 #include <map>
@@ -220,7 +220,7 @@ private:
 
 extern "C" {
 
-evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::blueprint::handler_base> handler);
+evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::blueprint::assigner_interface> assigner_interface);
 void vm_host_destroy_context(evmc_host_context* context);
 }
 
