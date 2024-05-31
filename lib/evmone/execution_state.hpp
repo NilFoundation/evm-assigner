@@ -4,11 +4,11 @@
 #pragma once
 
 #include <evmc/evmc.hpp>
-#include <intx/intx.hpp>
 #include <string>
 #include <vector>
 
-#include <nil/blueprint/handler_base.hpp>
+#include <nil/blueprint/assigner.hpp>
+#include <nil/blueprint/zkevm_word.hpp>
 
 namespace evmone
 {
@@ -17,11 +17,11 @@ namespace baseline
 class CodeAnalysis;
 }
 
-using uint256 = intx::uint256;
 using bytes = std::basic_string<uint8_t>;
 using bytes_view = std::basic_string_view<uint8_t>;
 
 /// Provides memory for EVM stack.
+template<typename BlueprintFieldType>
 class StackSpace
 {
 public:
@@ -29,15 +29,14 @@ public:
     static constexpr auto limit = 1024;
 
     /// Returns the pointer to the "bottom", i.e. below the stack space.
-    [[nodiscard, clang::no_sanitize("bounds")]] uint256* bottom() noexcept
+    [[nodiscard, clang::no_sanitize("bounds")]] nil::blueprint::zkevm_word<BlueprintFieldType>* bottom() noexcept
     {
         return m_stack_space - 1;
     }
 
 private:
     /// The storage allocated for maximum possible number of items.
-    /// Items are aligned to 256 bits for better packing in cache lines.
-    alignas(sizeof(uint256)) uint256 m_stack_space[limit];
+    nil::blueprint::zkevm_word<BlueprintFieldType> m_stack_space[limit];
 };
 
 
@@ -89,10 +88,10 @@ public:
     void grow(size_t new_size) noexcept
     {
         // Restriction for future changes. EVM always has memory size as multiple of 32 bytes.
-        INTX_REQUIRE(new_size % 32 == 0);
+        assert(new_size % 32 == 0);
 
         // Allow only growing memory. Include hint for optimizing compiler.
-        INTX_REQUIRE(new_size > m_size);
+        assert(new_size > m_size);
 
         if (new_size > m_capacity)
         {
@@ -117,6 +116,7 @@ public:
 
 /// Generic execution state for generic instructions implementations.
 // NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
+template<typename BlueprintFieldType>
 class ExecutionState
 {
 public:
@@ -138,7 +138,7 @@ public:
     evmc_status_code status = EVMC_SUCCESS;
     size_t output_offset = 0;
     size_t output_size = 0;
-    std::shared_ptr<nil::blueprint::handler_base> m_handler;
+    std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner;
 
 private:
     evmc_tx_context m_tx = {};
@@ -156,23 +156,20 @@ public:
     /// Stack space allocation.
     ///
     /// This is the last field to make other fields' offsets of reasonable values.
-    StackSpace stack_space;
+    StackSpace<BlueprintFieldType> stack_space;
 
     ExecutionState() noexcept = default;
 
     ExecutionState(const evmc_message& message, evmc_revision revision,
         const evmc_host_interface& host_interface, evmc_host_context* host_ctx, bytes_view _code,
-        bytes_view _data) noexcept
+        bytes_view _data, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
       : msg{&message},
         host{host_interface, host_ctx},
         rev{revision},
         original_code{_code},
-        data{_data}
+        data{_data},
+        assigner{_assigner}
     {}
-
-    void set_handler(std::shared_ptr<nil::blueprint::handler_base> handler) {
-        m_handler = handler;
-    }
 
     /// Resets the contents of the ExecutionState so that it could be reused.
     void reset(const evmc_message& message, evmc_revision revision,
@@ -197,7 +194,7 @@ public:
 
     const evmc_tx_context& get_tx_context() noexcept
     {
-        if (INTX_UNLIKELY(m_tx.block_timestamp == 0))
+        if (bool(m_tx.block_timestamp == 0))
             m_tx = host.get_tx_context();
         return m_tx;
     }

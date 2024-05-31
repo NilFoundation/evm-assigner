@@ -4,12 +4,16 @@
 // Based on example host
 
 #include <evmc/evmc.hpp>
-#include <nil/blueprint/handler_base.hpp>
+#include <evmone/evmone.h>
+#include <ethash/keccak.hpp>
 
 #include <algorithm>
 #include <map>
 #include <vector>
 #include <memory>
+
+#include <nil/blueprint/assigner_interface.hpp>
+#include <nil/blueprint/zkevm_word.hpp>
 
 using namespace evmc::literals;
 
@@ -38,20 +42,20 @@ using accounts = std::map<evmc::address, account>;
 
 }  // namespace evmc
 
+template<typename BlueprintFieldType>
 class VMHost : public evmc::Host
 {
     evmc::accounts accounts;
     evmc_tx_context tx_context{};
-    std::shared_ptr<nil::blueprint::handler_base> handler;
 
 public:
     VMHost() = default;
-    explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::blueprint::handler_base> _handler) noexcept
-      : tx_context{_tx_context}, handler{_handler}
+    explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
+      : tx_context{_tx_context}, assigner{_assigner}
     {}
 
-    VMHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts, std::shared_ptr<nil::blueprint::handler_base> _handler) noexcept
-      : accounts{_accounts}, tx_context{_tx_context}, handler{_handler}
+    VMHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
+      : accounts{_accounts}, tx_context{_tx_context}, assigner{_assigner}
     {}
 
     bool account_exists(const evmc::address& addr) const noexcept final
@@ -212,16 +216,95 @@ public:
     }
 
 private:
-    evmc::Result handle_call(const evmc_message& msg);
-    evmc::Result handle_create(const evmc_message& msg);
-    evmc::address calculate_address(const evmc_message& msg);
+    std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner;
+
+    evmc::Result handle_call(const evmc_message& msg) {
+        evmc_vm * vm = evmc_create_evmone();
+        auto sender_iter = accounts.find(msg.sender);
+        if (sender_iter == accounts.end())
+        {
+            // Sender account does not exist
+            return evmc::Result{EVMC_INTERNAL_ERROR};
+        }
+        auto &sender_acc = sender_iter->second;
+        auto account_iter = accounts.find(msg.code_address);
+        if (account_iter == accounts.end())
+        {
+            // Create account
+            accounts[msg.code_address] = {};
+        }
+        auto& acc = accounts[msg.code_address];
+        if (msg.kind == EVMC_CALL) {
+            auto value_to_transfer = nil::blueprint::zkevm_word<BlueprintFieldType>(msg.value);
+            auto balance = nil::blueprint::zkevm_word<BlueprintFieldType>(sender_acc.balance);
+            // Balance was already checked in evmone, so simply adjust it
+            sender_acc.balance = (balance - value_to_transfer).to_uint256be();
+            acc.balance = (value_to_transfer + nil::blueprint::zkevm_word<BlueprintFieldType>(acc.balance)).to_uint256be();
+        }
+        if (acc.code.empty())
+        {
+            return evmc::Result{EVMC_SUCCESS, msg.gas, 0, msg.input_data, msg.input_size};
+        }
+        // TODO: handle precompiled contracts
+        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(vm, &get_interface(), to_context(),
+                                                                        EVMC_LATEST_STABLE_REVISION, &msg, acc.code.data(), acc.code.size(), assigner);
+        return res;
+    }
+
+    evmc::Result handle_create(const evmc_message& msg) {
+        evmc::address new_contract_address = calculate_address(msg);
+        if (accounts.find(new_contract_address) != accounts.end())
+        {
+            // Address collision
+            return evmc::Result{EVMC_FAILURE};
+        }
+        accounts[new_contract_address] = {};
+        if (msg.input_size == 0)
+        {
+            return evmc::Result{EVMC_SUCCESS, msg.gas, 0, new_contract_address};
+        }
+        evmc::VM vm{evmc_create_evmone()};
+        evmc_message init_msg(msg);
+        init_msg.kind = EVMC_CALL;
+        init_msg.recipient = new_contract_address;
+        init_msg.sender = msg.sender;
+        init_msg.input_size = 0;
+        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(vm.get_raw_pointer(), &get_interface(), to_context(),
+                                                                        EVMC_LATEST_STABLE_REVISION, &init_msg, msg.input_data, msg.input_size, assigner);
+        if (res.status_code == EVMC_SUCCESS)
+        {
+            accounts[new_contract_address].code =
+                std::vector<uint8_t>(res.output_data, res.output_data + res.output_size);
+        }
+        res.create_address = new_contract_address;
+        return res;
+    }
+
+    evmc::address calculate_address(const evmc_message& msg) {
+        // TODO: Implement for CREATE opcode, for now the result is only correct for CREATE2
+        // CREATE requires rlp encoding
+        auto seed = nil::blueprint::zkevm_word<BlueprintFieldType>(msg.create2_salt);
+        auto hash = nil::blueprint::zkevm_word<BlueprintFieldType>(ethash::keccak256(msg.input_data, msg.input_size));
+        auto sender = nil::blueprint::zkevm_word<BlueprintFieldType>(msg.sender);
+        auto sum = nil::blueprint::zkevm_word<BlueprintFieldType>(0xff) + seed + hash + sender;
+        auto rehash = ethash::keccak256(sum.raw_data(), sum.size());
+        // Result address is the last 20 bytes of the hash
+        evmc::address res;
+        std::memcpy(res.bytes, rehash.bytes + 12, 20);
+        return res;
+    }
 };
 
-
-extern "C" {
-
-evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::blueprint::handler_base> handler);
-void vm_host_destroy_context(evmc_host_context* context);
+template<typename BlueprintFieldType>
+evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner) {
+    auto host = new VMHost<BlueprintFieldType>{tx_context, assigner};
+    return host->to_context();
 }
+
+template<typename BlueprintFieldType>
+void vm_host_destroy_context(evmc_host_context* context) {
+     delete evmc::Host::from_context<VMHost<BlueprintFieldType>>(context);
+}
+
 
 #endif  // EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_VM_HOST_H_

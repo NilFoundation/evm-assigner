@@ -5,19 +5,37 @@ cmake_policy(SET CMP0063 NEW)
 
 option(BUILD_ASSIGNER_TESTS "Build unit tests" FALSE)
 
-add_library(${PROJECT_NAME} STATIC src/vm_host.cpp src/handler_base.cpp)
+set(evmone_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline_instruction_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/eof.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.cpp
+)
+
+add_library(${PROJECT_NAME} STATIC ${evmone_sources})
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 find_package(crypto3 REQUIRED)
 find_package(blueprint_crypto3 REQUIRED)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../evmone>)
 
 target_link_libraries(${PROJECT_NAME}
-                      PUBLIC evmone crypto3::all blueprint
-                      PRIVATE ethash::keccak)
+                      PUBLIC evmc::evmc intx::intx crypto3::all blueprint ethash::keccak)
+
+set_target_properties(
+    ${PROJECT_NAME}
+    PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_SOVERSION}
+)
+
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="${PROJECT_VERSION}")
 
 # Install assigner headers
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
@@ -28,12 +46,10 @@ install(TARGETS ${PROJECT_NAME} EXPORT assignerTargets DESTINATION ${CMAKE_INSTA
 # Install evmone headers
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/execution_state.hpp
-              ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/tracing.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/eof.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/instructions_opcodes.hpp
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 if(BUILD_ASSIGNER_TESTS)
     add_subdirectory(test)
 endif()

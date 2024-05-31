@@ -4,5 +4,4 @@
 
 find_package(intx CONFIG REQUIRED)
 
-add_subdirectory(evmone)
 add_subdirectory(assigner)

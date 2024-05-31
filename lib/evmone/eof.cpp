@@ -6,7 +6,6 @@
 #include "baseline_instruction_table.hpp"
 #include "instructions_traits.hpp"
 
-#include <intx/intx.hpp>
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -63,7 +62,7 @@ EOFValidationError get_section_missing_error(uint8_t section_id) noexcept
     case DATA_SECTION:
         return EOFValidationError::data_section_missing;
     default:
-        intx::unreachable();
+        return EOFValidationError::impossible;
     }
 }
 
