@@ -116,35 +116,11 @@ add_subdirectory(lib)
 
 # INSTALL
 
-set(install_targets evmone)
-if(TARGET evmone-standalone)
-    list(APPEND install_targets evmone-standalone)
-endif()
-if(TARGET evm-test)
-    list(APPEND install_targets evm-test)
-endif()
-if(TARGET evmone-bench)
-    list(APPEND install_targets evmone-bench)
-endif()
-
-set_target_properties(
-    ${install_targets} PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
-)
-
-install(TARGETS ${install_targets} EXPORT evmoneTargets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
 install(DIRECTORY ${include_dir}/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 set(CONFIG_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/evm-assigner)
 set(TARGET_NAMESPACE evm-assigner::)
-install(EXPORT evmoneTargets NAMESPACE ${TARGET_NAMESPACE} DESTINATION ${CONFIG_PATH})
 install(EXPORT assignerTargets NAMESPACE ${TARGET_NAMESPACE} DESTINATION ${CONFIG_PATH})
 
 include(CMakePackageConfigHelpers)
