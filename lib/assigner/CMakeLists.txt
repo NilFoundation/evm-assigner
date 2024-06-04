@@ -7,27 +7,23 @@ option(BUILD_ASSIGNER_TESTS "Build unit tests" FALSE)
 
 add_library(${PROJECT_NAME} STATIC src/vm_host.cpp src/handler_base.cpp)
 
-find_package(Boost COMPONENTS REQUIRED filesystem log log_setup program_options thread system)
+find_package(crypto3 REQUIRED)
+find_package(blueprint_crypto3 REQUIRED)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-                           ${CMAKE_CURRENT_SOURCE_DIR}/include
-                           ${include_dir}/evmone
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../evmone
-                           ${BLUEPRINT_DIR}/include
-                           ${CRYPTO3_DIR}/include
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../evmone>)
 
-                           ${Boost_INCLUDE_DIRS})
-
-# TODO: link to blueprint and crypto3 here after fixing this in crypto3:
-# https://github.com/NilFoundation/crypto3/issues/175
-target_link_libraries(${PROJECT_NAME} PUBLIC
-                      evmone)
+target_link_libraries(${PROJECT_NAME}
+                      PUBLIC evmone crypto3::all blueprint
+                      PRIVATE ethash::keccak)
 
 # Install assigner headers
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 # Install library
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS ${PROJECT_NAME} EXPORT assignerTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Install evmone headers
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.hpp
