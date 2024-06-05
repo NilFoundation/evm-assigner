@@ -52,7 +52,7 @@ Note: this variable could be retrieved from Nix shell environment
 ### Configure cmake
 
 ```bash
-cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_ASSIGNER_TESTS=TRUE -DHUNTER_ENABLED=OFF
+cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_ASSIGNER_TESTS=TRUE
 
 ```
 

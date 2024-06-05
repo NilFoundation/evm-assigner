@@ -73,10 +73,6 @@
 
           src = self;
 
-          cmakeFlags = [
-            "-DHUNTER_ENABLED=OFF" # TODO: this will be removed after we get rid of Hunter
-          ];
-
           doCheck = false;
         };
 
@@ -105,7 +101,6 @@
           src = self;
 
           cmakeFlags = [
-            "-DHUNTER_ENABLED=OFF" # TODO: this will be removed after we get rid of Hunter
             "-DBUILD_ASSIGNER_TESTS=TRUE"
           ];
 

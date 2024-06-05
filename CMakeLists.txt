@@ -18,8 +18,6 @@ include(CMakePackageConfigHelpers)
 cable_configure_toolchain(DEFAULT cxx17-pic)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
-include(Hunter/init)
-
 project(evmone_assigner LANGUAGES CXX C)
 
 set(PROJECT_VERSION 0.11.0-dev)
@@ -33,7 +31,6 @@ if(PROJECT_VERSION_MAJOR EQUAL 0)
     set(PROJECT_SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 endif()
 
-hunter_add_package(ethash)
 find_package(ethash CONFIG REQUIRED)
 find_package(evmc REQUIRED)
 

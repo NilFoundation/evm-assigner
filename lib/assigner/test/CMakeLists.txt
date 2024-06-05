@@ -1,5 +1,3 @@
-hunter_add_package(GTest)
-
 include(GoogleTest)
 
 find_package(GTest CONFIG REQUIRED)
