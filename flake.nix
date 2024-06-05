@@ -59,7 +59,6 @@
           buildInputs = with pkgs; [
             cmake
             ninja
-            gtest
             boost
             ethash
           ];

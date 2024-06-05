@@ -22,6 +22,5 @@ if ("${CRYPTO3_DIR}" STREQUAL "")
     message(FATAL_ERROR "crypto3 library was not found. You should provide it through CMAKE_PREFIX_PATH")
 endif()
 
-add_subdirectory(fprinter)
 add_subdirectory(evmone)
 add_subdirectory(assigner)
