@@ -33,3 +33,6 @@ jobs:
 
     - name: Run tests
       run: nix flake -L check
+
+    - name: Check build without nix additional environment flags
+      run: .github/scripts/pure-cmake-build.sh
