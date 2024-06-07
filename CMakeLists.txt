@@ -18,7 +18,7 @@ include(CMakePackageConfigHelpers)
 cable_configure_toolchain(DEFAULT cxx17-pic)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
-project(evmone_assigner LANGUAGES CXX C)
+project(evm-assigner LANGUAGES CXX C)
 
 set(PROJECT_VERSION 0.11.0-dev)
 
@@ -142,21 +142,21 @@ install(TARGETS ${install_targets} EXPORT evmoneTargets
 install(DIRECTORY ${include_dir}/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-set(CONFIG_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/evmone-assigner)
-set(TARGET_NAMESPACE evm_assigner::)
+set(CONFIG_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/evm-assigner)
+set(TARGET_NAMESPACE evm-assigner::)
 install(EXPORT evmoneTargets NAMESPACE ${TARGET_NAMESPACE} DESTINATION ${CONFIG_PATH})
 install(EXPORT assignerTargets NAMESPACE ${TARGET_NAMESPACE} DESTINATION ${CONFIG_PATH})
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
     cmake/Config.cmake.in
-    evmone-assigner-config.cmake
+    evm-assigner-config.cmake
     INSTALL_DESTINATION ${CONFIG_PATH}
 )
 
 install(
     FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/evmone-assigner-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/evm-assigner-config.cmake
     DESTINATION ${CONFIG_PATH}
 )
 
