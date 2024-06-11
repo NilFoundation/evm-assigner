@@ -25,6 +25,7 @@ namespace nil {
             virtual void set_constant(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx, const uint256& v) = 0;
             virtual void set_public_input(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx, const uint256& v) = 0;
             virtual void set_selector(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx, const uint256& v) = 0;
+            virtual void test_zkevm_bytecode(std::vector<std::vector<std::uint8_t>> bytecodes) = 0;
 
             virtual uint256 witness(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx) = 0;
             virtual uint256 constant(std::uint32_t table_idx, std::uint32_t column_idx, std::uint32_t row_idx) = 0;

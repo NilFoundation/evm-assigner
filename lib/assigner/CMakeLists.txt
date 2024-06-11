@@ -7,7 +7,7 @@ option(BUILD_ASSIGNER_TESTS "Build unit tests" FALSE)
 
 add_library(${PROJECT_NAME} STATIC src/vm_host.cpp src/handler_base.cpp)
 
-find_package(Boost COMPONENTS REQUIRED filesystem log log_setup program_options thread system)
+find_package(Boost COMPONENTS REQUIRED filesystem log log_setup program_options thread system random unit_test_framework)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/include

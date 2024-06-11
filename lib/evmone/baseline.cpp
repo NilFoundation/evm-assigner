@@ -16,10 +16,13 @@
 #include <nil/blueprint/component.hpp>
 #include <nil/blueprint/handler.hpp>
 //#include <nil/blueprint/components/zkevm/circuits/bytecode.hpp>
+// #include "boost/random/random_device.hpp"
+std::string bytecode_addition = "0x60806040523480156100195760008061001661001f565b50505b5061008d565b632a2a7adb598160e01b8152600481016020815285602082015260005b8681101561005a57808601518160408401015260208101905061003c565b506020828760640184336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b505050565b6102b38061009c6000396000f3fe6080604052348015610019576000806100166100a3565b50505b50600436106100345760003560e01c8063f080118c14610042575b60008061003f6100a3565b50505b61005c6004803603810190610057919061018b565b610072565b60405161006991906101df565b60405180910390f35b6000818361008091906101fa565b6000819061008c610111565b505050818361009b91906101fa565b905092915050565b632a2a7adb598160e01b8152600481016020815285602082015260005b868110156100de5780860151816040840101526020810190506100c0565b506020828760640184336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b505050565b6322bd64c0598160e01b8152836004820152846024820152600081604483336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b60005b604081101561017157600081830152602081019050610157565b505050565b60008135905061018581610293565b92915050565b600080604083850312156101a7576000806101a46100a3565b50505b60006101b585828601610176565b92505060206101c685828601610176565b9150509250929050565b6101d981610250565b82525050565b60006020820190506101f460008301846101d0565b92915050565b600061020582610250565b915061021083610250565b9250827fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff038211156102455761024461025a565b5b828201905092915050565b6000819050919050565b7f4e487b710000000000000000000000000000000000000000000000000000000060005260116004526024600061028f6100a3565b5050565b61029c81610250565b81146102b0576000806102ad6100a3565b50505b5056";
 
-#include <nil/crypto3/hash/algorithm/hash.hpp>
-#include <nil/crypto3/hash/keccak.hpp>
-#include <nil/crypto3/random/algebraic_engine.hpp>
+
+// #include <nil/crypto3/hash/algorithm/hash.hpp>
+// #include <nil/crypto3/hash/keccak.hpp>
+// #include <nil/crypto3/random/algebraic_engine.hpp>
 
 #ifdef NDEBUG
 #define release_inline gnu::always_inline, msvc::forceinline
@@ -275,88 +278,100 @@ int64_t dispatch(const CostTable& cost_table, ExecutionState& state, int64_t gas
 
     //BYTECODE CODE
     
-    using value_type = typename nil::crypto3::algebra::curves::pallas::base_field_type::value_type;
-    using hash_type = nil::crypto3::hashes::keccak_1600<256>;
-    //using component_type = blueprint::components::zkevm_bytecode<ArithmetizationType, BlueprintFieldType>;
-    std::cout << "MYINFO: <Enter dispatch function>" << std::endl;
-    std::cout << "MYINFO: bytecode size: " << state.original_code.size() << std::endl;
-    std::cout << "MYINFO: bytecode: " << std::endl;
-    std::vector<std::uint8_t> bytecode;
+    // using value_type = typename nil::crypto3::algebra::curves::pallas::base_field_type::value_type;
+    // using hash_type = nil::crypto3::hashes::keccak_1600<256>;
+    // //using component_type = blueprint::components::zkevm_bytecode<ArithmetizationType, BlueprintFieldType>;
+    // std::cout << "MYINFO: <Enter dispatch function>" << std::endl;
+
+    std::vector<std::vector<std::uint8_t>> bytecodes;
+    std::vector<std::uint8_t> cur_bytecode;
     for (int i = 0; i < state.original_code.size(); i++) {
         const auto op = code[i];
-        bytecode.push_back(op);
-        std::cout << (uint)op << " ";
+        cur_bytecode.push_back(op);
+        // std::cout << (uint)op << " ";
     }
-    std::cout << std::endl;
+    bytecodes.push_back(cur_bytecode);
+    // state.m_handler->test_zkevm_bytecode({hex_string_to_bytes(bytecode_addition)});
+    state.m_handler->test_zkevm_bytecode(bytecodes);
 
-    std::cout << "MYINFO: <get hashcode>:" << std::endl;
-    std::string hash = nil::crypto3::hash<nil::crypto3::hashes::keccak_1600<256>>(bytecode.begin(), bytecode.end());
-    std::string str_hi = hash.substr(0, hash.size()-32);
-    std::string str_lo = hash.substr(hash.size()-32, 32);
-    value_type hash_hi;
-    value_type hash_lo;
-    for( std::size_t j = 0; j < str_hi.size(); j++ ){hash_hi *=16; hash_hi += str_hi[j] >= '0' && str_hi[j] <= '9'? str_hi[j] - '0' : str_hi[j] - 'a' + 10;}
-    for( std::size_t j = 0; j < str_lo.size(); j++ ){hash_lo *=16; hash_lo += str_lo[j] >= '0' && str_lo[j] <= '9'? str_lo[j] - '0' : str_lo[j] - 'a' + 10;}
-    std::cout << std::hex <<  "Contract hash = " << hash << " h:" << hash_hi << " l:" << hash_lo << std::dec << std::endl;
-    //public_input.push_back(hash_hi);
-    //public_input.push_back(hash_lo);
-    static constexpr std::size_t TAG = 0;
-    static constexpr std::size_t INDEX = 1;
-    static constexpr std::size_t VALUE = 2;
-    static constexpr std::size_t IS_OPCODE = 3;
-    static constexpr std::size_t PUSH_SIZE = 4;
-    static constexpr std::size_t LENGTH_LEFT = 5;
-    static constexpr std::size_t HASH_HI = 6;
-    static constexpr std::size_t HASH_LO = 7;
-    static constexpr std::size_t VALUE_RLC = 8;
-    static constexpr std::size_t RLC_CHALLENGE = 9;
+    // std::cout << "MYINFO: bytecode size: " << state.original_code.size() << std::endl;
+    // std::cout << "MYINFO: bytecode: " << std::endl;
+    // std::vector<std::uint8_t> bytecode;
+    // for (int i = 0; i < state.original_code.size(); i++) {
+    //     const auto op = code[i];
+    //     bytecode.push_back(op);
+    //     std::cout << (uint)op << " ";
+    // }
+    // std::cout << std::endl;
 
-    value_type rlc_challenge = 15;
-    std::size_t cur = 0;
-    std::size_t start_row_index = 0;
-    std::size_t prev_length = 0;
-    value_type prev_vrlc = 0;
-    value_type push_size = 0;
-    for(std::size_t j = 0; j < state.original_code.size(); j++, cur++){
-        std::uint8_t byte = bytecode[j];
-        state.m_handler->set_witness(0, VALUE, start_row_index + cur,  (uint256)bytecode[j]);
-        state.m_handler->set_witness(0, HASH_HI, start_row_index + cur, nil::blueprint::handler<
-                typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(hash_hi));
-        state.m_handler->set_witness(0, HASH_LO, start_row_index + cur, nil::blueprint::handler<
-                typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(hash_lo));
-        state.m_handler->set_witness(0, RLC_CHALLENGE, start_row_index + cur, nil::blueprint::handler<
-                typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(rlc_challenge));
-        if( j == 0) {
-            // HEADER
-            state.m_handler->set_witness(0, TAG, start_row_index + cur, 0);
-            state.m_handler->set_witness(0, INDEX, start_row_index + cur, 0);
-            state.m_handler->set_witness(0, IS_OPCODE, start_row_index + cur, 0);
-            state.m_handler->set_witness(0, PUSH_SIZE, start_row_index + cur, 0);
-            prev_length = bytecode[j];
-            state.m_handler->set_witness(0, LENGTH_LEFT, start_row_index + cur, (uint256)bytecode[j]);
-            prev_vrlc = 0;
-            state.m_handler->set_witness(0, VALUE_RLC, start_row_index + cur, 0);
-            push_size = 0;
-        } else {
-            // BYTE
-            state.m_handler->set_witness(0, TAG, start_row_index + cur, 1);
-            state.m_handler->set_witness(0, INDEX, start_row_index + cur, j-1);
-            state.m_handler->set_witness(0, LENGTH_LEFT, start_row_index + cur, prev_length - 1);
-            prev_length = prev_length - 1;
-            if (push_size == 0) {
-                state.m_handler->set_witness(0, IS_OPCODE, start_row_index + cur, 1);
-                if(byte > 0x5f && byte < 0x80) push_size = byte - 0x5f;
-            } else {
-                state.m_handler->set_witness(0, IS_OPCODE, start_row_index + cur, 0);
-                push_size--;
-            }
-            state.m_handler->set_witness(0, PUSH_SIZE, start_row_index + cur, nil::blueprint::handler<
-                typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(push_size));
-            state.m_handler->set_witness(0, VALUE_RLC, start_row_index + cur, nil::blueprint::handler<
-                typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(prev_vrlc * rlc_challenge + byte));
-            prev_vrlc = prev_vrlc * rlc_challenge + byte;
-        }
-    }
+    // std::cout << "MYINFO: <get hashcode>:" << std::endl;
+    // std::string hash = nil::crypto3::hash<nil::crypto3::hashes::keccak_1600<256>>(bytecode.begin(), bytecode.end());
+    // std::string str_hi = hash.substr(0, hash.size()-32);
+    // std::string str_lo = hash.substr(hash.size()-32, 32);
+    // value_type hash_hi;
+    // value_type hash_lo;
+    // for( std::size_t j = 0; j < str_hi.size(); j++ ){hash_hi *=16; hash_hi += str_hi[j] >= '0' && str_hi[j] <= '9'? str_hi[j] - '0' : str_hi[j] - 'a' + 10;}
+    // for( std::size_t j = 0; j < str_lo.size(); j++ ){hash_lo *=16; hash_lo += str_lo[j] >= '0' && str_lo[j] <= '9'? str_lo[j] - '0' : str_lo[j] - 'a' + 10;}
+    // std::cout << std::hex <<  "Contract hash = " << hash << " h:" << hash_hi << " l:" << hash_lo << std::dec << std::endl;
+    // //public_input.push_back(hash_hi);
+    // //public_input.push_back(hash_lo);
+    // static constexpr std::size_t TAG = 0;
+    // static constexpr std::size_t INDEX = 1;
+    // static constexpr std::size_t VALUE = 2;
+    // static constexpr std::size_t IS_OPCODE = 3;
+    // static constexpr std::size_t PUSH_SIZE = 4;
+    // static constexpr std::size_t LENGTH_LEFT = 5;
+    // static constexpr std::size_t HASH_HI = 6;
+    // static constexpr std::size_t HASH_LO = 7;
+    // static constexpr std::size_t VALUE_RLC = 8;
+    // static constexpr std::size_t RLC_CHALLENGE = 9;
+
+    // value_type rlc_challenge = 15;
+    // std::size_t cur = 0;
+    // std::size_t start_row_index = 0;
+    // std::size_t prev_length = 0;
+    // value_type prev_vrlc = 0;
+    // value_type push_size = 0;
+    // for(std::size_t j = 0; j < state.original_code.size(); j++, cur++){
+    //     std::uint8_t byte = bytecode[j];
+    //     state.m_handler->set_witness(0, VALUE, start_row_index + cur,  (uint256)bytecode[j]);
+    //     state.m_handler->set_witness(0, HASH_HI, start_row_index + cur, nil::blueprint::handler<
+    //             typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(hash_hi));
+    //     state.m_handler->set_witness(0, HASH_LO, start_row_index + cur, nil::blueprint::handler<
+    //             typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(hash_lo));
+    //     state.m_handler->set_witness(0, RLC_CHALLENGE, start_row_index + cur, nil::blueprint::handler<
+    //             typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(rlc_challenge));
+    //     if( j == 0) {
+    //         // HEADER
+    //         state.m_handler->set_witness(0, TAG, start_row_index + cur, 0);
+    //         state.m_handler->set_witness(0, INDEX, start_row_index + cur, 0);
+    //         state.m_handler->set_witness(0, IS_OPCODE, start_row_index + cur, 0);
+    //         state.m_handler->set_witness(0, PUSH_SIZE, start_row_index + cur, 0);
+    //         prev_length = bytecode[j];
+    //         state.m_handler->set_witness(0, LENGTH_LEFT, start_row_index + cur, (uint256)bytecode[j]);
+    //         prev_vrlc = 0;
+    //         state.m_handler->set_witness(0, VALUE_RLC, start_row_index + cur, 0);
+    //         push_size = 0;
+    //     } else {
+    //         // BYTE
+    //         state.m_handler->set_witness(0, TAG, start_row_index + cur, 1);
+    //         state.m_handler->set_witness(0, INDEX, start_row_index + cur, j-1);
+    //         state.m_handler->set_witness(0, LENGTH_LEFT, start_row_index + cur, prev_length - 1);
+    //         prev_length = prev_length - 1;
+    //         if (push_size == 0) {
+    //             state.m_handler->set_witness(0, IS_OPCODE, start_row_index + cur, 1);
+    //             if(byte > 0x5f && byte < 0x80) push_size = byte - 0x5f;
+    //         } else {
+    //             state.m_handler->set_witness(0, IS_OPCODE, start_row_index + cur, 0);
+    //             push_size--;
+    //         }
+    //         state.m_handler->set_witness(0, PUSH_SIZE, start_row_index + cur, nil::blueprint::handler<
+    //             typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(push_size));
+    //         state.m_handler->set_witness(0, VALUE_RLC, start_row_index + cur, nil::blueprint::handler<
+    //             typename nil::crypto3::algebra::curves::pallas::base_field_type>::to_uint256(prev_vrlc * rlc_challenge + byte));
+    //         prev_vrlc = prev_vrlc * rlc_challenge + byte;
+    //     }
+    // }
 
     while (true)  // Guaranteed to terminate because padded code ends with STOP.
     {
