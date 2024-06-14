@@ -9,7 +9,6 @@ set(evmone_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline_instruction_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/eof.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${evmone_sources})
@@ -35,8 +34,6 @@ set_target_properties(
     SOVERSION ${PROJECT_SOVERSION}
 )
 
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="${PROJECT_VERSION}")
-
 # Install assigner headers
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
@@ -44,8 +41,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
 install(TARGETS ${PROJECT_NAME} EXPORT assignerTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Install evmone headers
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/vm.hpp
-              ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/execution_state.hpp
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/execution_state.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/baseline.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/eof.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/../evmone/instructions_opcodes.hpp

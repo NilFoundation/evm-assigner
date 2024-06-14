@@ -12,7 +12,7 @@
 #include <vector>
 #include <memory>
 
-#include <nil/blueprint/assigner_interface.hpp>
+#include <nil/blueprint/assigner.hpp>
 #include <nil/blueprint/zkevm_word.hpp>
 
 using namespace evmc::literals;
@@ -219,7 +219,6 @@ private:
     std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner;
 
     evmc::Result handle_call(const evmc_message& msg) {
-        evmc_vm * vm = evmc_create_evmone();
         auto sender_iter = accounts.find(msg.sender);
         if (sender_iter == accounts.end())
         {
@@ -246,7 +245,7 @@ private:
             return evmc::Result{EVMC_SUCCESS, msg.gas, 0, msg.input_data, msg.input_size};
         }
         // TODO: handle precompiled contracts
-        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(vm, &get_interface(), to_context(),
+        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
                                                                         EVMC_LATEST_STABLE_REVISION, &msg, acc.code.data(), acc.code.size(), assigner);
         return res;
     }
@@ -263,13 +262,12 @@ private:
         {
             return evmc::Result{EVMC_SUCCESS, msg.gas, 0, new_contract_address};
         }
-        evmc::VM vm{evmc_create_evmone()};
         evmc_message init_msg(msg);
         init_msg.kind = EVMC_CALL;
         init_msg.recipient = new_contract_address;
         init_msg.sender = msg.sender;
         init_msg.input_size = 0;
-        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(vm.get_raw_pointer(), &get_interface(), to_context(),
+        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
                                                                         EVMC_LATEST_STABLE_REVISION, &init_msg, msg.input_data, msg.input_size, assigner);
         if (res.status_code == EVMC_SUCCESS)
         {

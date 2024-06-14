@@ -7,8 +7,14 @@
 #include <string>
 #include <vector>
 
-#include <nil/blueprint/assigner.hpp>
 #include <nil/blueprint/zkevm_word.hpp>
+
+namespace nil {
+    namespace blueprint {
+        template<typename BlueprintFieldType>
+        struct assigner;
+    }
+}
 
 namespace evmone
 {
@@ -112,7 +118,6 @@ public:
     /// Virtually clears the memory by setting its size to 0. The capacity stays unchanged.
     void clear() noexcept { m_size = 0; }
 };
-
 
 /// Generic execution state for generic instructions implementations.
 // NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)

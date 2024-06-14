@@ -1,6 +1,6 @@
 #include <map>
 
-#include <nil/blueprint/assigner_interface.hpp>
+#include <nil/blueprint/assigner.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
 #include <evmc/evmc.hpp>
@@ -32,9 +32,6 @@ public:
 
         assigner_ptr =
             std::make_shared<nil::blueprint::assigner<BlueprintFieldType>>(assignments);
-
-        vm = evmc_create_evmone();
-
 
         const uint8_t input[] = "Hello World!";
         const evmc_uint256be value = {{1, 0}};
@@ -77,7 +74,6 @@ public:
     static std::vector<nil::blueprint::assignment<ArithmetizationType>> assignments;
     static const struct evmc_host_interface* host_interface;
     static struct evmc_host_context* ctx;
-    static struct evmc_vm* vm;
     static evmc_revision rev;
     static struct evmc_message msg;
 };
@@ -88,7 +84,6 @@ std::vector<nil::blueprint::assignment<AssignerTest::ArithmetizationType>>
     AssignerTest::assignments;
 const struct evmc_host_interface* AssignerTest::host_interface;
 struct evmc_host_context* AssignerTest::ctx;
-struct evmc_vm* AssignerTest::vm;
 evmc_revision AssignerTest::rev = {};
 struct evmc_message AssignerTest::msg;
 
@@ -142,7 +137,7 @@ TEST_F(AssignerTest, mul) {
         evmone::OP_MUL,
     };
 
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     EXPECT_EQ(assignments[0].witness(0, 0), 8);
     EXPECT_EQ(assignments[0].witness(0, 1), 4);
 }
@@ -156,7 +151,7 @@ TEST_F(AssignerTest, callvalue_calldataload)
         index,
         evmone::OP_CALLDATALOAD,
     };
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     //EXPECT_EQ(assignments[0].witness(1, 0), nil::blueprint::to_field<BlueprintFieldType>(msg.value));
     EXPECT_EQ(assignments[0].witness(1, 1), index);
 }
@@ -169,7 +164,7 @@ TEST_F(AssignerTest, DISABLED_dataload) {
         index,
         evmone::OP_DATALOAD,
     };
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     EXPECT_EQ(assignments[0].witness(1, 2), index);
 }
 
@@ -187,7 +182,7 @@ TEST_F(AssignerTest, mstore_load)
         index,
         evmone::OP_MLOAD,
     };
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     EXPECT_EQ(assignments[0].witness(2, 0), value);
     EXPECT_EQ(assignments[0].witness(2, 1), index);
     EXPECT_EQ(assignments[0].witness(2, 2), value);
@@ -207,7 +202,7 @@ TEST_F(AssignerTest, sstore_load)
         key,
         evmone::OP_SLOAD,
     };
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     EXPECT_EQ(assignments[0].witness(3, 0), value);
     EXPECT_EQ(assignments[0].witness(3, 1), key);
     EXPECT_EQ(assignments[0].witness(3, 2), value);
@@ -227,7 +222,7 @@ TEST_F(AssignerTest, DISABLED_tstore_load) {
         key,
         evmone::OP_TLOAD,
     };
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     EXPECT_EQ(assignments[0].witness(4, 0), value);
     EXPECT_EQ(assignments[0].witness(4, 1), key);
     EXPECT_EQ(assignments[0].witness(4, 2), value);
@@ -284,7 +279,7 @@ TEST_F(AssignerTest, create) {
     // Code is in the last 13 bytes of the container
     code.insert(code.begin() + static_cast<long int>(push13_idx) + 1, contract_code.begin(), contract_code.end());
 
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     // Check stored witnesses of MSTORE instruction at depth 1
     EXPECT_EQ(assignments[1].witness(2, 1), 0);
     EXPECT_EQ(assignments[1].witness(2, 0), 0xFFFFFFFF);
@@ -351,7 +346,7 @@ TEST_F(AssignerTest, call) {
     // Code is in the last 13 bytes of the container
     code.insert(code.begin() + static_cast<long int>(push17_idx) + 1, contract_code.begin(), contract_code.end());
 
-    nil::blueprint::evaluate<BlueprintFieldType>(vm, host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
+    nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
     // Check stored witness of CALLDATALOAD instruction at depth 1
     EXPECT_EQ(assignments[1].witness(1, 1), 0);
 }
