@@ -12,7 +12,8 @@
 #include <intx/intx.hpp>
 #include <ethash/keccak.hpp>
 
-#include <nil/blueprint/assigner.hpp>
+#include <nil/crypto3/algebra/curves/pallas.hpp>
+#include <nil/blueprint/blueprint/plonk/assignment.hpp>
 #include <nil/marshalling/field_type.hpp>
 #include <nil/marshalling/endianness.hpp>
 #include <nil/crypto3/marshalling/algebra/types/field_element.hpp>

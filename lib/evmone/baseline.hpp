@@ -7,7 +7,6 @@
 #include "baseline_instruction_table.hpp"
 #include "execution_state.hpp"
 #include "instructions.hpp"
-#include "vm.hpp"
 
 #include <evmc/evmc.h>
 #include <evmc/utils.h>
@@ -251,34 +250,6 @@ int64_t dispatch(const CostTable& cost_table, ExecutionState<BlueprintFieldType>
         }
     }
     //intx::unreachable();
-}
-
-/// Executes in Baseline interpreter using EVMC-compatible parameters.
-static evmc_result execute(evmc_vm* c_vm, const evmc_host_interface* host, evmc_host_context* ctx,
-    evmc_revision rev, const evmc_message* msg, const uint8_t* code, size_t code_size) noexcept {
-    const auto result = evmc::make_result(EVMC_SUCCESS, msg->gas, msg->gas, nullptr, 0);
-    return result;
-}
-
-/// Executes in Baseline interpreter on the given external and initialized state.
-template<typename BlueprintFieldType>
-static evmc_result execute(const VM&, int64_t gas, ExecutionState<BlueprintFieldType>& state, const CodeAnalysis& analysis) noexcept {
-    state.analysis.baseline = &analysis;  // Assign code analysis for instruction implementations.
-
-    const auto code = analysis.executable_code;
-
-    const auto& cost_table = get_baseline_cost_table(state.rev, analysis.eof_header.version);
-
-    gas = dispatch<false>(cost_table, state, gas, code.data());
-
-    const auto gas_left = (state.status == EVMC_SUCCESS || state.status == EVMC_REVERT) ? gas : 0;
-    const auto gas_refund = (state.status == EVMC_SUCCESS) ? state.gas_refund : 0;
-
-    assert(state.output_size != 0 || state.output_offset == 0);
-    const auto result = evmc::make_result(state.status, gas_left, gas_refund,
-        state.output_size != 0 ? &state.memory[state.output_offset] : nullptr, state.output_size);
-
-    return result;
 }
 
 }  // namespace baseline
