@@ -87,45 +87,72 @@ struct evmc_host_context* AssignerTest::ctx;
 evmc_revision AssignerTest::rev = {};
 struct evmc_message AssignerTest::msg;
 
-/*std::string to_string(const uint8_t* bytes, size_t len) {
-    std::ostringstream oss;
+inline void check_eq(const uint8_t* l, const uint8_t* r, size_t len) {
     for (int i = 0; i < len; i++) {
-        oss << bytes[i];
+        EXPECT_EQ(l[i], r[i]);
     }
-    return oss.str();
 }
 
-TEST_F(AssignerTest, conversions_uint256be_to_field)
+TEST_F(AssignerTest, conversions_uint256be_to_zkevm_word)
 {
     evmc::uint256be uint256be_number;
     uint256be_number.bytes[2] = 10;  // Some big number, 10 << 128
-    // conversion to field
-    auto field = nil::blueprint::to_field<BlueprintFieldType>(uint256be_number);
+    // conversion to zkevm_word
+    auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(uint256be_number);
     // conversion back to uint256be
-    evmc::uint256be uint256be_result = nil::blueprint::to_uint256be<BlueprintFieldType>(field);
+    evmc::uint256be uint256be_result = tmp.to_uint256be();
     // check if same
-    EXPECT_EQ(to_string(uint256be_number.bytes, 32), to_string(uint256be_result.bytes, 32));
+    check_eq(uint256be_number.bytes, uint256be_result.bytes, 32);
 }
 
-TEST_F(AssignerTest, conversions_address_to_field)
+TEST_F(AssignerTest, conversions_address_to_zkevm_word)
 {
     evmc::address address;
     address.bytes[19] = 10;
-    // conversion to field
-    auto field = nil::blueprint::to_field<BlueprintFieldType>(address);
-    // conversion back to uint256be
-    evmc::address address_result = nil::blueprint::to_address<BlueprintFieldType>(field);
+    // conversion to zkevm_word
+    auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(address);
+    // conversion back to address
+    evmc::address address_result = tmp.to_address();
     // check if same
-    EXPECT_EQ(to_string(address.bytes, 20), to_string(address_result.bytes, 20));
+    check_eq(address.bytes, address_result.bytes, 20);
 }
 
-TEST_F(AssignerTest, conversions_field_to_uint64)
+TEST_F(AssignerTest, conversions_hash_to_zkevm_word)
 {
-    BlueprintFieldType::value_type field = 10;
-    // conversion to uint64_t
-    auto uint64_number = nil::blueprint::to_uint64<BlueprintFieldType>(field);
-    EXPECT_EQ(uint64_number, 10);
-}*/
+    ethash::hash256 hash;
+    hash.bytes[2] = 10;
+    // conversion to zkevm_word
+    auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(hash);
+    // conversion back to address
+    ethash::hash256 hash_result = tmp.to_hash();
+    // check if same
+    check_eq(hash.bytes, hash_result.bytes, 32);
+}
+
+TEST_F(AssignerTest, conversions_uint64_to_zkevm_word)
+{
+    uint64_t number = std::numeric_limits<uint64_t>::max();
+    // conversion to zkevm_word
+    auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(number);
+    // conversion back to address
+    auto number_result = tmp.to_uint64();
+    // check if same
+    EXPECT_EQ(number_result, number);
+}
+
+TEST_F(AssignerTest, load_store_zkevm_word)
+{
+    uint64_t number = std::numeric_limits<uint64_t>::max();
+
+    nil::blueprint::zkevm_word<BlueprintFieldType> tmp;
+    // load data to the lase 64 bits
+    tmp.load_partial_data(reinterpret_cast<const uint8_t*>(&number), 8, 0);
+    uint64_t number_result;
+    // store back to the uint64_t variable
+    tmp.store<uint64_t>(reinterpret_cast<uint8_t*>(&number_result));
+    // check if same
+    EXPECT_EQ(number_result, number);
+}
 
 TEST_F(AssignerTest, mul) {
 
