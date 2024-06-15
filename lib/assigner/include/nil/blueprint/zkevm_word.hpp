@@ -65,33 +65,6 @@ namespace nil {
                 value = intx::be::unsafe::load<intx::uint256>(data);
             }
 
-            zkevm_word(column_type_t column_type, size_t column_idx, size_t row_idx, const assignment<BlueprintFieldType>& tbl) {
-                typename BlueprintFieldType::value_type field_val;
-                switch (column_type) {
-                    case column_type_t::witness:
-                        field_val = tbl.witness(column_idx, row_idx);
-                        break;
-                    case column_type_t::constant:
-                        field_val = tbl.constant(column_idx, row_idx);
-                        break;
-                    case column_type_t::public_input:
-                        field_val = tbl.public_input(column_idx, row_idx);
-                        break;
-                };
-                auto field_container = nil::crypto3::marshalling::types::field_element<TTypeBase, typename BlueprintFieldType::value_type>(field_val);
-                evmc::uint256be data;
-                auto write_iter = data.bytes;
-                field_container.write(write_iter, field_container.length());
-                value = value = intx::be::load<intx::uint256>(data);
-            }
-
-            void put_into_assignment_table(column_type_t column_type, size_t column_idx, size_t row_idx, assignment<BlueprintFieldType>& tbl) const {
-                auto field_container = nil::crypto3::marshalling::types::field_element<TTypeBase, typename BlueprintFieldType::value_type>();
-                auto data = intx::be::store<evmc::uint256be>(value);
-                auto read_iter = data.bytes;
-                field_container.read(read_iter, field_container.length());
-            }
-
             // operators
             zkevm_word<BlueprintFieldType> operator+(const zkevm_word<BlueprintFieldType>& other) const {
                 return zkevm_word<BlueprintFieldType>(value + other.value);
@@ -196,6 +169,10 @@ namespace nil {
             // convertions
             uint64_t to_uint64(size_t i = 0) const {
                 return static_cast<uint64_t>(value[i]);
+            }
+
+            ethash::hash256 to_hash() const {
+                return intx::be::store<ethash::hash256>(value);
             }
 
             evmc::address to_address() const {
