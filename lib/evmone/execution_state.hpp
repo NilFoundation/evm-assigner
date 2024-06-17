@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include <nil/blueprint/zkevm_word.hpp>
+#include <zkevm_word.hpp>
 
 namespace nil {
     namespace blueprint {
