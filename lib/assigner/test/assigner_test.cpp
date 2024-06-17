@@ -1,13 +1,12 @@
 #include <map>
 
-#include <nil/blueprint/assigner.hpp>
+#include <assigner.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
 #include <evmc/evmc.hpp>
-#include <evmone/evmone.h>
 #include <evmc/mocked_host.hpp>
-#include "instructions_opcodes.hpp"
-#include "vm_host.h"
+#include <instructions_opcodes.hpp>
+#include <vm_host.hpp>
 
 #include <gtest/gtest.h>
 

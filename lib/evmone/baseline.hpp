@@ -205,14 +205,13 @@ template <typename BlueprintFieldType>
         state.status = status;
         return {nullptr, pos.stack_top};
     }
-    //const auto new_pos = invoke(instr::core::operation<BlueprintFieldType>::template push<1>, pos, gas, state);
     code_iterator new_pos = pos.code_it;
     switch (op)
     {
 #undef ON_OPCODE_IDENTIFIER
-#define ON_OPCODE_IDENTIFIER(OPCODE, IDENTIFIER)                                                                                         \
-case OPCODE:                                                                                                  \
-    ASM_COMMENT(OPCODE);                                                                                      \
+#define ON_OPCODE_IDENTIFIER(OPCODE, IDENTIFIER)                         \
+case OPCODE:                                                             \
+    ASM_COMMENT(OPCODE);                                                 \
     new_pos = invoke(instr::core::IDENTIFIER, pos, gas, state);          \
     break;
     MAP_OPCODES
@@ -249,7 +248,6 @@ int64_t dispatch(const CostTable& cost_table, ExecutionState<BlueprintFieldType>
             position = next;
         }
     }
-    //intx::unreachable();
 }
 
 }  // namespace baseline

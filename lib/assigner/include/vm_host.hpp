@@ -4,7 +4,6 @@
 // Based on example host
 
 #include <evmc/evmc.hpp>
-#include <evmone/evmone.h>
 #include <ethash/keccak.hpp>
 
 #include <algorithm>
@@ -12,8 +11,8 @@
 #include <vector>
 #include <memory>
 
-#include <nil/blueprint/assigner.hpp>
-#include <nil/blueprint/zkevm_word.hpp>
+#include <assigner.hpp>
+#include <zkevm_word.hpp>
 
 using namespace evmc::literals;
 

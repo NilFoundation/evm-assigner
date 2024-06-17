@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <nil/crypto3/detail/assert.hpp>
 #include <evmc/evmc.h>
 #include <evmc/utils.h>
 #include <cassert>
