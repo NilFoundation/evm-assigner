@@ -189,9 +189,9 @@ constexpr auto sstore_costs = []() noexcept {
 namespace instr::core
 {
 template <typename BlueprintFieldType>
-struct operation {
+struct instructions {
     /// Check memory requirements of a reasonable size.
-    static inline bool check_memory(
+    static bool check_memory(
         int64_t& gas_left, Memory& memory, const nil::blueprint::zkevm_word<BlueprintFieldType>& offset, uint64_t size) noexcept
     {
         // TODO: This should be done in intx.
@@ -209,7 +209,7 @@ struct operation {
     }
 
     /// Check memory requirements for "copy" instructions.
-    static inline bool check_memory(
+    static bool check_memory(
         int64_t& gas_left, Memory& memory, const nil::blueprint::zkevm_word<BlueprintFieldType>& offset, const nil::blueprint::zkevm_word<BlueprintFieldType>& size) noexcept
     {
         if (size == 0)  // Copy of size 0 is always valid (even if offset is huge).
@@ -232,65 +232,65 @@ struct operation {
     /// - the `stack` pointer points to the EVM stack top element.
     /// Moreover, these implementations _do not_ inform about new stack height
     /// after execution. The adjustment must be performed by the caller.
-    static inline void noop(StackTop<BlueprintFieldType> /*stack*/) noexcept {}
-    static inline void pop(StackTop<BlueprintFieldType> /*stack*/) noexcept {}
-    static inline void jumpdest(StackTop<BlueprintFieldType> /*stack*/) noexcept {}
+    static void noop(StackTop<BlueprintFieldType> /*stack*/) noexcept {}
+    static void pop(StackTop<BlueprintFieldType> /*stack*/) noexcept {}
+    static void jumpdest(StackTop<BlueprintFieldType> /*stack*/) noexcept {}
 
-    static inline TermResult stop_impl(
+    static TermResult stop_impl(
         StackTop<BlueprintFieldType> /*stack*/, int64_t gas_left, ExecutionState<BlueprintFieldType>& /*state*/, evmc_status_code Status) noexcept
     {
         return {Status, gas_left};
     }
-    static inline TermResult stop(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static TermResult stop(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return stop_impl(stack, gas_left, state, EVMC_SUCCESS);
     }
 
-    static inline TermResult invalid(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static TermResult invalid(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return stop_impl(stack, gas_left, state, EVMC_INVALID_INSTRUCTION);
     }
 
-    static inline void add(StackTop<BlueprintFieldType> stack) noexcept
+    static void add(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = stack.top() + stack.pop();
     }
 
-    static inline void mul(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void mul(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(0, 0) = stack[0].to_uint64();
         state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(0, 1) = stack[1].to_uint64();
         stack.top() = stack.top() * stack.pop();
     }
 
-    static inline void sub(StackTop<BlueprintFieldType> stack) noexcept
+    static void sub(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack[1] = stack[0] - stack[1];
     }
 
-    static inline void div(StackTop<BlueprintFieldType> stack) noexcept
+    static void div(StackTop<BlueprintFieldType> stack) noexcept
     {
         auto& v = stack[1];
         v = v != 0 ? stack[0] / v : 0;
     }
 
-    static inline void sdiv(StackTop<BlueprintFieldType> stack) noexcept
+    static void sdiv(StackTop<BlueprintFieldType> stack) noexcept
     {
         auto& v = stack[1];
         v = stack[0].sdiv(v);
     }
 
-    static inline void mod(StackTop<BlueprintFieldType> stack) noexcept
+    static void mod(StackTop<BlueprintFieldType> stack) noexcept
     {
         auto& v = stack[1];
         v = v != 0 ? stack[0] % v : 0;
     }
 
-    static inline void smod(StackTop<BlueprintFieldType> stack) noexcept
+    static void smod(StackTop<BlueprintFieldType> stack) noexcept
     {
         auto& v = stack[1];
         v = stack[0].smod(v);
     }
 
-    static inline void addmod(StackTop<BlueprintFieldType> stack) noexcept
+    static void addmod(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& x = stack.pop();
         const auto& y = stack.pop();
@@ -298,7 +298,7 @@ struct operation {
         m = x.addmod(y, m);
     }
 
-    static inline void mulmod(StackTop<BlueprintFieldType> stack) noexcept
+    static void mulmod(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& x = stack[0];
         const auto& y = stack[1];
@@ -306,7 +306,7 @@ struct operation {
         m = x.mulmod(y, m);
     }
 
-    static inline Result exp(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result exp(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& base = stack.pop();
         auto& exponent = stack.top();
@@ -321,7 +321,7 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline void signextend(StackTop<BlueprintFieldType> stack) noexcept
+    static void signextend(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& ext = stack.pop();
         auto& x = stack.top();
@@ -354,61 +354,61 @@ struct operation {
         }
     }
 
-    static inline void lt(StackTop<BlueprintFieldType> stack) noexcept
+    static void lt(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& x = stack.pop();
         stack[0] = x < stack[0];
     }
 
-    static inline void gt(StackTop<BlueprintFieldType> stack) noexcept
+    static void gt(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& x = stack.pop();
         stack[0] = stack[0] < x;  // Arguments are swapped and < is used.
     }
 
-    static inline void slt(StackTop<BlueprintFieldType> stack) noexcept
+    static void slt(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& x = stack.pop();
         stack[0] = x.slt(stack[0]);
     }
 
-    static inline void sgt(StackTop<BlueprintFieldType> stack) noexcept
+    static void sgt(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& x = stack.pop();
         stack[0] = stack[0].slt(x);  // Arguments are swapped and SLT is used.
     }
 
-    static inline void eq(StackTop<BlueprintFieldType> stack) noexcept
+    static void eq(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack[1] = stack[0] == stack[1];
     }
 
-    static inline void iszero(StackTop<BlueprintFieldType> stack) noexcept
+    static void iszero(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = stack.top() == 0;
     }
 
-    static inline void and_(StackTop<BlueprintFieldType> stack) noexcept
+    static void and_(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = stack.top() & stack.pop();
     }
 
-    static inline void or_(StackTop<BlueprintFieldType> stack) noexcept
+    static void or_(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = stack.top() | stack.pop();
     }
 
-    static inline void xor_(StackTop<BlueprintFieldType> stack) noexcept
+    static void xor_(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = stack.top() ^stack.pop();
     }
 
-    static inline void not_(StackTop<BlueprintFieldType> stack) noexcept
+    static void not_(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = ~stack.top();
     }
 
-    static inline void byte(StackTop<BlueprintFieldType> stack) noexcept
+    static void byte(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& n = stack.pop();
         auto& x = stack.top();
@@ -423,17 +423,17 @@ struct operation {
         x = nil::blueprint::zkevm_word<BlueprintFieldType>(byte);
     }
 
-    static inline void shl(StackTop<BlueprintFieldType> stack) noexcept
+    static void shl(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = stack.top() << stack.pop();
     }
 
-    static inline void shr(StackTop<BlueprintFieldType> stack) noexcept
+    static void shr(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.top() = stack.top() >> stack.pop();
     }
 
-    static inline void sar(StackTop<BlueprintFieldType> stack) noexcept
+    static void sar(StackTop<BlueprintFieldType> stack) noexcept
     {
         const auto& y = stack.pop();
         auto& x = stack.top();
@@ -445,7 +445,7 @@ struct operation {
         x = (x >> y) | (sign_mask << mask_shift);
     }
 
-    static inline Result keccak256(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result keccak256(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& index = stack.pop();
         auto& size = stack.top();
@@ -466,12 +466,12 @@ struct operation {
     }
 
 
-    static inline void address(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void address(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->recipient));
     }
 
-    static inline Result balance(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result balance(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& x = stack.top();
         const auto addr = x.to_address();
@@ -486,24 +486,24 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline void origin(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void origin(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().tx_origin));
     }
 
-    static inline void caller(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void caller(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->sender));
     }
 
-    static inline void callvalue(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void callvalue(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto val = nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->value);
         state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(1, 0) = val.to_uint64();
         stack.push(val);
     }
 
-    static inline void calldataload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void calldataload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& index = stack.top();
         state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(1, 1) = index.to_uint64();
@@ -524,12 +524,12 @@ struct operation {
         }
     }
 
-    static inline void calldatasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void calldatasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.msg->input_size);
     }
 
-    static inline Result calldatacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result calldatacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& mem_index = stack.pop();
         const auto& input_index = stack.pop();
@@ -556,12 +556,12 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline void codesize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void codesize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.original_code.size());
     }
 
-    static inline Result codecopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result codecopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: Similar to calldatacopy().
 
@@ -593,17 +593,17 @@ struct operation {
     }
 
 
-    static inline void gasprice(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void gasprice(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().tx_gas_price));
     }
 
-    static inline void basefee(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void basefee(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().block_base_fee));
     }
 
-    static inline void blobhash(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void blobhash(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& index = stack.top();
         const auto& tx = state.get_tx_context();
@@ -614,12 +614,12 @@ struct operation {
                     0;
     }
 
-    static inline void blobbasefee(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void blobbasefee(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().blob_base_fee));
     }
 
-    static inline Result extcodesize(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result extcodesize(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& x = stack.top();
         const auto addr = x.to_address();
@@ -634,7 +634,7 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline Result extcodecopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result extcodecopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto addr = stack.pop().to_address();
         const auto& mem_index = stack.pop();
@@ -668,12 +668,12 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline void returndatasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void returndatasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.return_data.size());
     }
 
-    static inline Result returndatacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result returndatacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& mem_index = stack.pop();
         const auto& input_index = stack.pop();
@@ -701,7 +701,7 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline Result extcodehash(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result extcodehash(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& x = stack.top();
         const auto addr = x.to_address();
@@ -717,7 +717,7 @@ struct operation {
     }
 
 
-    static inline void blockhash(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void blockhash(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& number = stack.top();
 
@@ -730,46 +730,46 @@ struct operation {
         number = nil::blueprint::zkevm_word<BlueprintFieldType>(header);
     }
 
-    static inline void coinbase(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void coinbase(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().block_coinbase));
     }
 
-    static inline void timestamp(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void timestamp(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: Add tests for negative timestamp?
         stack.push(static_cast<uint64_t>(state.get_tx_context().block_timestamp));
     }
 
-    static inline void number(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void number(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: Add tests for negative block number?
         stack.push(static_cast<uint64_t>(state.get_tx_context().block_number));
     }
 
-    static inline void prevrandao(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void prevrandao(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().block_prev_randao));
     }
 
-    static inline void gaslimit(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void gaslimit(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(static_cast<uint64_t>(state.get_tx_context().block_gas_limit));
     }
 
-    static inline void chainid(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void chainid(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().chain_id));
     }
 
-    static inline void selfbalance(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void selfbalance(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: introduce selfbalance in EVMC?
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.host.get_balance(state.msg->recipient)));
     }
 
     template<typename T>
-    static inline Result mload(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result mload(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& index = stack.top();
 
@@ -782,7 +782,7 @@ struct operation {
     }
 
     template<typename T>
-    static inline Result mstore(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result mstore(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& index = stack.pop();
         auto& value = stack.pop();
@@ -797,7 +797,7 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline Result mstore8(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result mstore8(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& index = stack.pop();
         const auto& value = stack.pop();
@@ -810,7 +810,7 @@ struct operation {
     }
 
     /// Internal jump implementation for JUMP/JUMPI instructions.
-    static inline code_iterator jump_impl(ExecutionState<BlueprintFieldType>& state, const nil::blueprint::zkevm_word<BlueprintFieldType>& dst) noexcept
+    static code_iterator jump_impl(ExecutionState<BlueprintFieldType>& state, const nil::blueprint::zkevm_word<BlueprintFieldType>& dst) noexcept
     {
         const auto& jumpdest_map = state.analysis.baseline->jumpdest_map;
         const auto dst_uint64 = dst.to_uint64();
@@ -824,33 +824,33 @@ struct operation {
     }
 
     /// JUMP instruction implementation using baseline::CodeAnalysis.
-    static inline code_iterator jump(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator /*pos*/) noexcept
+    static code_iterator jump(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator /*pos*/) noexcept
     {
         return jump_impl(state, stack.pop());
     }
 
     /// JUMPI instruction implementation using baseline::CodeAnalysis.
-    static inline code_iterator jumpi(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
+    static code_iterator jumpi(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         const auto& dst = stack.pop();
         const auto& cond = stack.pop();
         return cond.to_uint64() > 0 ? jump_impl(state, dst) : pos + 1;
     }
 
-    static inline code_iterator rjump(StackTop<BlueprintFieldType> /*stack*/, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pc) noexcept
+    static code_iterator rjump(StackTop<BlueprintFieldType> /*stack*/, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pc) noexcept
     {
         // Reading next 2 bytes is guaranteed to be safe by deploy-time validation.
         const auto offset = read_int16_be(&pc[1]);
         return pc + 3 + offset;  // PC_post_rjump + offset
     }
 
-    static inline code_iterator rjumpi(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pc) noexcept
+    static code_iterator rjumpi(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pc) noexcept
     {
         const auto cond = stack.pop();
         return cond.to_uint64() > 0 ? rjump(stack, state, pc) : pc + 3;
     }
 
-    static inline code_iterator rjumpv(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pc) noexcept
+    static code_iterator rjumpv(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pc) noexcept
     {
         constexpr auto REL_OFFSET_SIZE = sizeof(int16_t);
         const auto case_ = stack.pop();
@@ -871,24 +871,24 @@ struct operation {
         }
     }
 
-    static inline code_iterator pc(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
+    static code_iterator pc(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         stack.push(static_cast<uint64_t>(pos - state.analysis.baseline->executable_code.data()));
         return pos + 1;
     }
 
-    static inline void msize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void msize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.memory.size());
     }
 
-    static inline Result gas(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& /*state*/) noexcept
+    static Result gas(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& /*state*/) noexcept
     {
         stack.push(gas_left);
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline void tload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void tload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& x = stack.top();
         evmc::bytes32 key = x.to_uint256be();
@@ -897,7 +897,7 @@ struct operation {
         state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(4, 2) = x.to_uint64();
     }
 
-    static inline Result tstore(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result tstore(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         if (state.in_static_mode())
             return {EVMC_STATIC_MODE_VIOLATION, 0};
@@ -910,7 +910,7 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline void push0(StackTop<BlueprintFieldType> stack) noexcept
+    static void push0(StackTop<BlueprintFieldType> stack) noexcept
     {
         stack.push({});
     }
@@ -920,7 +920,7 @@ struct operation {
     ///
     /// It assumes that at lest 32 bytes of data are available so code padding is required.
     template <size_t Len>
-    static inline code_iterator push(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pos) noexcept
+    static code_iterator push(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pos) noexcept
     {
         // TODO size of field in bytes
         constexpr size_t word_size = 8;
@@ -951,7 +951,7 @@ struct operation {
     /// DUP instruction implementation.
     /// @tparam N  The number as in the instruction definition, e.g. DUP3 is dup<3>.
     template <int N>
-    static inline void dup(StackTop<BlueprintFieldType> stack) noexcept
+    static void dup(StackTop<BlueprintFieldType> stack) noexcept
     {
         static_assert(N >= 0 && N <= 16);
         if constexpr (N == 0)
@@ -969,7 +969,7 @@ struct operation {
     /// SWAP instruction implementation.
     /// @tparam N  The number as in the instruction definition, e.g. SWAP3 is swap<3>.
     template <int N>
-    static inline void swap(StackTop<BlueprintFieldType> stack) noexcept
+    static void swap(StackTop<BlueprintFieldType> stack) noexcept
     {
         static_assert(N >= 0 && N <= 16);
 
@@ -999,7 +999,7 @@ struct operation {
         a->set_val(t3, 3);
     }
 
-    static inline code_iterator dupn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
+    static code_iterator dupn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         const auto n = pos[1] + 1;
 
@@ -1016,7 +1016,7 @@ struct operation {
         return pos + 2;
     }
 
-    static inline code_iterator swapn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
+    static code_iterator swapn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         const auto n = pos[1] + 1;
 
@@ -1034,7 +1034,7 @@ struct operation {
         return pos + 2;
     }
 
-    static inline Result mcopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result mcopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& dst_u256 = stack.pop();
         const auto& src_u256 = stack.pop();
@@ -1056,7 +1056,7 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline void dataload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void dataload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto& index = stack.top();
         state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(1, 2) = index.to_uint64();
@@ -1076,12 +1076,12 @@ struct operation {
         }
     }
 
-    static inline void datasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
+    static void datasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.data.size());
     }
 
-    static inline code_iterator dataloadn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
+    static code_iterator dataloadn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         const auto index = read_uint16_be(&pos[1]);
 
@@ -1089,7 +1089,7 @@ struct operation {
         return pos + 3;
     }
 
-    static inline Result datacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static Result datacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         const auto& mem_index = stack.pop();
         const auto& data_index = stack.pop();
@@ -1118,7 +1118,7 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline Result call_impl(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state, Opcode Op) noexcept
+    static Result call_impl(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state, Opcode Op) noexcept
     {
         assert(Op == OP_CALL || Op == OP_CALLCODE || Op == OP_DELEGATECALL || Op == OP_STATICCALL);
 
@@ -1234,19 +1234,19 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline Result call(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static Result call(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return call_impl(stack, gas_left, state, OP_CALL);
     }
 
-    static inline Result callcode(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static Result callcode(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return call_impl(stack, gas_left, state, OP_CALLCODE);
     }
 
-    static inline Result delegatecall(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static Result delegatecall(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return call_impl(stack, gas_left, state, OP_DELEGATECALL);
     }
 
-    static inline Result staticcall(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static Result staticcall(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return call_impl(stack, gas_left, state, OP_STATICCALL);
     }
 
@@ -1313,15 +1313,15 @@ struct operation {
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static inline Result create(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static Result create(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return create_impl(stack, gas_left, state, OP_CREATE);
     }
 
-    static inline constexpr auto create2(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static constexpr auto create2(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return create_impl(stack, gas_left, state, OP_CREATE2);
     }
 
-    static inline code_iterator callf(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
+    static code_iterator callf(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         const auto index = read_uint16_be(&pos[1]);
         const auto& header = state.analysis.baseline->eof_header;
@@ -1348,14 +1348,14 @@ struct operation {
         return code.data() + offset;
     }
 
-    static inline code_iterator retf(StackTop<BlueprintFieldType> /*stack*/, ExecutionState<BlueprintFieldType>& state, code_iterator /*pos*/) noexcept
+    static code_iterator retf(StackTop<BlueprintFieldType> /*stack*/, ExecutionState<BlueprintFieldType>& state, code_iterator /*pos*/) noexcept
     {
         const auto p = state.call_stack.back();
         state.call_stack.pop_back();
         return p;
     }
 
-    static inline code_iterator jumpf(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
+    static code_iterator jumpf(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         const auto index = read_uint16_be(&pos[1]);
         const auto& header = state.analysis.baseline->eof_header;
@@ -1374,7 +1374,7 @@ struct operation {
         return code.data() + offset;
     }
 
-    static inline TermResult return_impl(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state, evmc_status_code StatusCode) noexcept
+    static TermResult return_impl(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state, evmc_status_code StatusCode) noexcept
     {
         const auto& offset = stack[0];
         const auto& size = stack[1];
@@ -1387,15 +1387,15 @@ struct operation {
             state.output_offset = offset.to_uint64();
         return {StatusCode, gas_left};
     }
-    static inline TermResult return_(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static TermResult return_(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return return_impl(stack, gas_left, state, EVMC_SUCCESS);
     }
 
-    static inline TermResult revert(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
+    static TermResult revert(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept {
         return return_impl(stack, gas_left, state, EVMC_REVERT);
     }
 
-    static inline TermResult selfdestruct(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
+    static TermResult selfdestruct(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         if (state.in_static_mode())
             return {EVMC_STATIC_MODE_VIOLATION, gas_left};
@@ -1479,6 +1479,6 @@ struct operation {
         state.gas_refund += gas_refund;
         return {EVMC_SUCCESS, gas_left};
     }
-}; // class operation
+}; // struct instructions
 }  // namespace instr::core
 }  // namespace evmone
