@@ -199,7 +199,7 @@ public:
 
     const evmc_tx_context& get_tx_context() noexcept
     {
-        if (bool(m_tx.block_timestamp == 0))
+        if (m_tx.block_timestamp == 0)
             m_tx = host.get_tx_context();
         return m_tx;
     }

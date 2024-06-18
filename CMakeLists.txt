@@ -110,14 +110,9 @@ endif()
 
 include(CTest)
 
-set(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 add_subdirectory(lib)
 
 # INSTALL
-
-install(DIRECTORY ${include_dir}/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 set(CONFIG_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/evm-assigner)
 set(TARGET_NAMESPACE evm-assigner::)
