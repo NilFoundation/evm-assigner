@@ -41,6 +41,10 @@ install(TARGETS ${PROJECT_NAME} EXPORT assignerTargets DESTINATION ${CMAKE_INSTA
 
 # Install evmone headers
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/evmone/execution_state.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmone/baseline_instruction_table.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmone/instructions.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmone/instructions_traits.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmone/instructions_xmacro.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/evmone/baseline.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/evmone/eof.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/evmone/instructions_opcodes.hpp
