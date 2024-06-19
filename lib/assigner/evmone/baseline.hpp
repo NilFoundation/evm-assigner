@@ -235,6 +235,8 @@ int64_t dispatch(const CostTable& cost_table, ExecutionState<BlueprintFieldType>
     // Code iterator and stack top pointer for interpreter loop.
     Position<BlueprintFieldType> position{code, stack_bottom};
 
+    // fill assignments for bytecode circuit
+    state.assigner->handle_bytcode(&state, code);
     while (true)  // Guaranteed to terminate because padded code ends with STOP.
     {
         const auto op = *position.code_it;

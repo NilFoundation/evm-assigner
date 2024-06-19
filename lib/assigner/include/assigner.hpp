@@ -13,6 +13,7 @@
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
+#include <bytecode.hpp>
 #include <baseline.hpp>
 #include <execution_state.hpp>
 
@@ -25,6 +26,11 @@ namespace nil {
             using ArithmetizationType = crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
 
             assigner(std::vector<assignment<ArithmetizationType>> &assignments):  m_assignments(assignments) {}
+
+            // TODO error handling
+            void handle_bytcode(const typename evmone::ExecutionState<BlueprintFieldType>* state, const uint8_t* code) {
+                return process_bytecode_input<BlueprintFieldType>(state->original_code.size(), code, m_assignments);
+            }
 
             std::vector<assignment<ArithmetizationType>> &m_assignments;
         };
