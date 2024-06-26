@@ -10,6 +10,8 @@
 
 #include <gtest/gtest.h>
 
+#include <client.hpp>
+
 class AssignerTest : public testing::Test
 {
 public:
@@ -94,6 +96,8 @@ inline void check_eq(const uint8_t* l, const uint8_t* r, size_t len) {
 
 TEST_F(AssignerTest, conversions_uint256be_to_zkevm_word)
 {
+    GetBalance();
+    EXPECT_EQ(1, 0);
     evmc::uint256be uint256be_number;
     uint256be_number.bytes[2] = 10;  // Some big number, 10 << 128
     // conversion to zkevm_word

@@ -64,7 +64,11 @@
 
         defaultCheckInputs = [ pkgs.gtest ];
 
-        commonBuildInputs = [ pkgs.boost ];
+        commonBuildInputs = [
+          pkgs.boost
+          pkgs.httplib
+          pkgs.openssl
+        ];
 
         inputsToPropagate =
           {

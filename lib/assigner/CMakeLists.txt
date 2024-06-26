@@ -17,6 +17,8 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 find_package(crypto3 REQUIRED)
 find_package(blueprint_crypto3 REQUIRED)
+find_package(OpenSSL REQUIRED)
+message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -24,7 +26,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/evmone>)
 
 target_link_libraries(${PROJECT_NAME}
-                      PUBLIC evmc::evmc intx::intx crypto3::all blueprint ethash::keccak)
+                      PUBLIC evmc::evmc intx::intx crypto3::all blueprint ethash::keccak ssl crypto)
 
 set_target_properties(
     ${PROJECT_NAME}
