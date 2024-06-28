@@ -38,6 +38,9 @@ public:
 
     /// Assigns the value to the stack top and moves the stack top pointer up.
     void push(const nil::blueprint::zkevm_word<BlueprintFieldType>& value) noexcept { *++m_top = value; }
+
+    /// size of stack
+    uint16_t size(nil::blueprint::zkevm_word<BlueprintFieldType>* bottom) noexcept { return (m_top > bottom) ? (uint16_t)(m_top - bottom) : 0; }
 };
 
 
@@ -249,65 +252,99 @@ struct instructions {
         return stop_impl(stack, gas_left, state, EVMC_INVALID_INSTRUCTION);
     }
 
-    static void add(StackTop<BlueprintFieldType> stack) noexcept
+    static void add(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        stack.top() = stack.top() + stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        stack.top() = stack.top() + stack.pop();// calculate stack next
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void mul(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(0, 0) = stack[0].to_uint64();
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(0, 1) = stack[1].to_uint64();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() * stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void sub(StackTop<BlueprintFieldType> stack) noexcept
+    static void sub(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        stack[1] = stack[0] - stack[1];
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        const auto& x = stack.pop();
+        stack[0] = x - stack[0];
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void div(StackTop<BlueprintFieldType> stack) noexcept
+    static void div(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        auto& v = stack[1];
-        v = v != 0 ? stack[0] / v : 0;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        const auto& x = stack.pop();
+        auto& v = stack[0];
+        v = v != 0 ? x / v : 0;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void sdiv(StackTop<BlueprintFieldType> stack) noexcept
+    static void sdiv(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        auto& v = stack[1];
-        v = stack[0].sdiv(v);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        const auto& x = stack.pop();
+        auto& v = stack[0];
+        v = x.sdiv(v);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void mod(StackTop<BlueprintFieldType> stack) noexcept
+    static void mod(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        auto& v = stack[1];
-        v = v != 0 ? stack[0] % v : 0;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        const auto& x = stack.pop();
+        auto& v = stack[0];
+        v = v != 0 ? x % v : 0;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void smod(StackTop<BlueprintFieldType> stack) noexcept
+    static void smod(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        auto& v = stack[1];
-        v = stack[0].smod(v);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        const auto& x = stack.pop();
+        auto& v = stack[0];
+        v = x.smod(v);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void addmod(StackTop<BlueprintFieldType> stack) noexcept
+    static void addmod(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& x = stack.pop();
         const auto& y = stack.pop();
         auto& m = stack.top();
         m = x.addmod(y, m);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void mulmod(StackTop<BlueprintFieldType> stack) noexcept
+    static void mulmod(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& x = stack[0];
         const auto& y = stack[1];
         auto& m = stack[2];
         m = x.mulmod(y, m);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result exp(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& base = stack.pop();
         auto& exponent = stack.top();
 
@@ -318,11 +355,14 @@ struct instructions {
             return {EVMC_OUT_OF_GAS, gas_left};
 
         exponent = base.exp(exponent);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static void signextend(StackTop<BlueprintFieldType> stack) noexcept
+    static void signextend(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& ext = stack.pop();
         auto& x = stack.top();
 
@@ -352,64 +392,96 @@ struct instructions {
             for (size_t i = 3; i > sign_word_index; --i)
                 x.set_val(sign_ex, i);  // Clear extended words.
         }
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void lt(StackTop<BlueprintFieldType> stack) noexcept
+    static void lt(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& x = stack.pop();
         stack[0] = x < stack[0];
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void gt(StackTop<BlueprintFieldType> stack) noexcept
+    static void gt(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& x = stack.pop();
         stack[0] = stack[0] < x;  // Arguments are swapped and < is used.
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void slt(StackTop<BlueprintFieldType> stack) noexcept
+    static void slt(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& x = stack.pop();
         stack[0] = x.slt(stack[0]);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void sgt(StackTop<BlueprintFieldType> stack) noexcept
+    static void sgt(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& x = stack.pop();
         stack[0] = stack[0].slt(x);  // Arguments are swapped and SLT is used.
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void eq(StackTop<BlueprintFieldType> stack) noexcept
+    static void eq(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        stack[1] = stack[0] == stack[1];
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        const auto& x = stack.pop();
+        stack[0] = stack[0] == x;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void iszero(StackTop<BlueprintFieldType> stack) noexcept
+    static void iszero(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() == 0;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void and_(StackTop<BlueprintFieldType> stack) noexcept
+    static void and_(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() & stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void or_(StackTop<BlueprintFieldType> stack) noexcept
+    static void or_(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() | stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void xor_(StackTop<BlueprintFieldType> stack) noexcept
+    static void xor_(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() ^stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void not_(StackTop<BlueprintFieldType> stack) noexcept
+    static void not_(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = ~stack.top();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void byte(StackTop<BlueprintFieldType> stack) noexcept
+    static void byte(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& n = stack.pop();
         auto& x = stack.top();
 
@@ -421,20 +493,29 @@ struct instructions {
         const auto byte_index = index % 8;
         const auto byte = (word >> (byte_index * 8)) & byte_mask;
         x = nil::blueprint::zkevm_word<BlueprintFieldType>(byte);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void shl(StackTop<BlueprintFieldType> stack) noexcept
+    static void shl(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() << stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void shr(StackTop<BlueprintFieldType> stack) noexcept
+    static void shr(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() >> stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void sar(StackTop<BlueprintFieldType> stack) noexcept
+    static void sar(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& y = stack.pop();
         auto& x = stack.top();
 
@@ -443,10 +524,13 @@ struct instructions {
 
         const auto mask_shift = (y < 256) ? (256 - y.to_uint64(0)) : 0;
         x = (x >> y) | (sign_mask << mask_shift);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result keccak256(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& index = stack.pop();
         auto& size = stack.top();
 
@@ -460,8 +544,15 @@ struct instructions {
         if ((gas_left -= cost) < 0)
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        auto data = s != 0 ? &state.memory[i] : nullptr;
+        uint8_t* data = nullptr;
+        if (s != 0 ) {
+            data = &state.memory[i];
+            for(uint64_t j = 0; j < 32; j++){
+                state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  index + j, state.rw_trace.size(), false, data[j]));
+            }
+        }
         size = nil::blueprint::zkevm_word<BlueprintFieldType>(ethash::keccak256(data, s));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return {EVMC_SUCCESS, gas_left};
     }
 
@@ -469,10 +560,12 @@ struct instructions {
     static void address(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->recipient));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result balance(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& x = stack.top();
         const auto addr = x.to_address();
 
@@ -483,30 +576,33 @@ struct instructions {
         }
 
         x = nil::blueprint::zkevm_word<BlueprintFieldType>(state.host.get_balance(addr));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return {EVMC_SUCCESS, gas_left};
     }
 
     static void origin(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().tx_origin));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void caller(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->sender));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void callvalue(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         auto val = nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->value);
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(1, 0) = val.to_uint64();
         stack.push(val);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void calldataload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& index = stack.top();
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(1, 1) = index.to_uint64();
 
         const auto index_uint64 = index.to_uint64();
         if (state.msg->input_size < index_uint64)
@@ -522,15 +618,20 @@ struct instructions {
 
             index = nil::blueprint::zkevm_word<BlueprintFieldType>(data, 32);
         }
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void calldatasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.msg->input_size);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result calldatacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& mem_index = stack.pop();
         const auto& input_index = stack.pop();
         const auto& size = stack.pop();
@@ -553,17 +654,25 @@ struct instructions {
         if (s - copy_size > 0)
             std::memset(&state.memory[dst + copy_size], 0, s - copy_size);
 
+        for(uint64_t j = 0; j < copy_size; j++){
+            state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  mem_index + j, state.rw_trace.size(), true, state.memory[dst + j]));
+        }
+
         return {EVMC_SUCCESS, gas_left};
     }
 
     static void codesize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.original_code.size());
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result codecopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: Similar to calldatacopy().
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
 
         const auto& mem_index = stack.pop();
         const auto& input_index = stack.pop();
@@ -589,6 +698,10 @@ struct instructions {
         if (s - copy_size > 0)
             std::memset(&state.memory[dst + copy_size], 0, s - copy_size);
 
+        for(uint64_t j = 0; j < copy_size; j++){
+            state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  mem_index + j, state.rw_trace.size(), true, state.memory[dst + j]));
+        }
+
         return {EVMC_SUCCESS, gas_left};
     }
 
@@ -596,15 +709,18 @@ struct instructions {
     static void gasprice(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().tx_gas_price));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void basefee(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().block_base_fee));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void blobhash(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& index = stack.top();
         const auto& tx = state.get_tx_context();
         const auto index_uin64 = index.to_uint64();
@@ -612,15 +728,18 @@ struct instructions {
         index = (index_uin64 < tx.blob_hashes_count) ?
                     nil::blueprint::zkevm_word<BlueprintFieldType>(tx.blob_hashes[index_uin64]) :
                     0;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void blobbasefee(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().blob_base_fee));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result extcodesize(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& x = stack.top();
         const auto addr = x.to_address();
 
@@ -631,11 +750,16 @@ struct instructions {
         }
 
         x = state.host.get_code_size(addr);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return {EVMC_SUCCESS, gas_left};
     }
 
     static Result extcodecopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-4, state.rw_trace.size(), false, stack[3]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto addr = stack.pop().to_address();
         const auto& mem_index = stack.pop();
         const auto& input_index = stack.pop();
@@ -663,6 +787,7 @@ struct instructions {
             const auto num_bytes_copied = state.host.copy_code(addr, src, &state.memory[dst], s);
             if (const auto num_bytes_to_clear = s - num_bytes_copied; num_bytes_to_clear > 0)
                 std::memset(&state.memory[dst + num_bytes_copied], 0, num_bytes_to_clear);
+            // TODO: add length write operations to memory
         }
 
         return {EVMC_SUCCESS, gas_left};
@@ -671,10 +796,14 @@ struct instructions {
     static void returndatasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.return_data.size());
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result returndatacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& mem_index = stack.pop();
         const auto& input_index = stack.pop();
         const auto& size = stack.pop();
@@ -695,14 +824,19 @@ struct instructions {
         if (const auto cost = copy_cost(s); (gas_left -= cost) < 0)
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        if (s > 0)
+        if (s > 0) {
             std::memcpy(&state.memory[dst], &state.return_data[src], s);
+            for(uint64_t j = 0; j < s; j++){
+                state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  dst + j, state.rw_trace.size(), true, state.memory[dst + j]));
+            }
+        }
 
         return {EVMC_SUCCESS, gas_left};
     }
 
     static Result extcodehash(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& x = stack.top();
         const auto addr = x.to_address();
 
@@ -713,12 +847,14 @@ struct instructions {
         }
 
         x = nil::blueprint::zkevm_word<BlueprintFieldType>(state.host.get_code_hash(addr));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return {EVMC_SUCCESS, gas_left};
     }
 
 
     static void blockhash(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& number = stack.top();
 
         const auto upper_bound = state.get_tx_context().block_number;
@@ -728,84 +864,106 @@ struct instructions {
             (decltype(upper_bound)(n) < upper_bound && decltype(upper_bound)(n) >= lower_bound) ?
             state.host.get_block_hash(decltype(upper_bound)(n)) : evmc::bytes32{};
         number = nil::blueprint::zkevm_word<BlueprintFieldType>(header);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void coinbase(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().block_coinbase));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void timestamp(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: Add tests for negative timestamp?
         stack.push(static_cast<uint64_t>(state.get_tx_context().block_timestamp));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void number(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: Add tests for negative block number?
         stack.push(static_cast<uint64_t>(state.get_tx_context().block_number));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void prevrandao(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().block_prev_randao));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void gaslimit(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(static_cast<uint64_t>(state.get_tx_context().block_gas_limit));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void chainid(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.get_tx_context().chain_id));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void selfbalance(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         // TODO: introduce selfbalance in EVMC?
         stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(state.host.get_balance(state.msg->recipient)));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     template<typename T>
     static Result mload(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& index = stack.top();
 
-        if (!check_memory(gas_left, state.memory, index, (BlueprintFieldType::modulus_bits / 8)))
+        if (!check_memory(gas_left, state.memory, index, nil::blueprint::zkevm_word<BlueprintFieldType>::size))
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        index = nil::blueprint::zkevm_word<BlueprintFieldType>(&state.memory[index.to_uint64()], (BlueprintFieldType::modulus_bits / 8));
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(2, 2) = index.to_uint64();
+        const auto addr = index.to_uint64();
+        index = nil::blueprint::zkevm_word<BlueprintFieldType>(&state.memory[addr], nil::blueprint::zkevm_word<BlueprintFieldType>::size);
+        for(uint64_t j = 0; j < nil::blueprint::zkevm_word<BlueprintFieldType>::size; j++){
+            state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  addr + j, state.rw_trace.size(), false, state.memory[addr + j]));
+        }
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return {EVMC_SUCCESS, gas_left};
     }
 
     template<typename T>
     static Result mstore(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& index = stack.pop();
         auto& value = stack.pop();
 
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(2, 0) = value.to_uint64();
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(2, 1) = index.to_uint64();
-
-        if (!check_memory(gas_left, state.memory, index, (BlueprintFieldType::modulus_bits / 8)))
+        if (!check_memory(gas_left, state.memory, index, nil::blueprint::zkevm_word<BlueprintFieldType>::size))
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        value.template store<T>(&state.memory[index.to_uint64()]);
+        const auto addr = index.to_uint64();
+        value.template store<T>(&state.memory[addr]);
+        for(uint64_t j = 0; j < nil::blueprint::zkevm_word<BlueprintFieldType>::size; j++){
+            state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  addr + j, state.rw_trace.size(), true, state.memory[addr + j]));
+        }
         return {EVMC_SUCCESS, gas_left};
     }
 
     static Result mstore8(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& index = stack.pop();
         const auto& value = stack.pop();
 
         if (!check_memory(gas_left, state.memory, index, 1))
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        state.memory[(int)index.to_uint64()] = value.to_uint64();
+        const auto addr = (int)index.to_uint64();
+        state.memory[addr] = value.to_uint64();
+        for(uint64_t j = 0; j < 8; j++){
+            state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  addr + j, state.rw_trace.size(), true, state.memory[addr + j]));
+        }
         return {EVMC_SUCCESS, gas_left};
     }
 
@@ -826,12 +984,15 @@ struct instructions {
     /// JUMP instruction implementation using baseline::CodeAnalysis.
     static code_iterator jump(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator /*pos*/) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         return jump_impl(state, stack.pop());
     }
 
     /// JUMPI instruction implementation using baseline::CodeAnalysis.
     static code_iterator jumpi(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& dst = stack.pop();
         const auto& cond = stack.pop();
         return cond.to_uint64() > 0 ? jump_impl(state, dst) : pos + 1;
@@ -846,12 +1007,14 @@ struct instructions {
 
     static code_iterator rjumpi(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pc) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto cond = stack.pop();
         return cond.to_uint64() > 0 ? rjump(stack, state, pc) : pc + 3;
     }
 
-    static code_iterator rjumpv(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pc) noexcept
+    static code_iterator rjumpv(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pc) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         constexpr auto REL_OFFSET_SIZE = sizeof(int16_t);
         const auto case_ = stack.pop();
 
@@ -874,27 +1037,32 @@ struct instructions {
     static code_iterator pc(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         stack.push(static_cast<uint64_t>(pos - state.analysis.baseline->executable_code.data()));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return pos + 1;
     }
 
     static void msize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.memory.size());
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static Result gas(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& /*state*/) noexcept
+    static Result gas(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(gas_left);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
         return {EVMC_SUCCESS, gas_left};
     }
 
     static void tload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& x = stack.top();
         evmc::bytes32 key = x.to_uint256be();
         const auto value = state.host.get_transient_storage(state.msg->recipient, key);
+        // TODO: add trasient storage operations
         x = nil::blueprint::zkevm_word<BlueprintFieldType>(value);
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(4, 2) = x.to_uint64();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static Result tstore(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
@@ -902,17 +1070,19 @@ struct instructions {
         if (state.in_static_mode())
             return {EVMC_STATIC_MODE_VIOLATION, 0};
 
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(4, 0) = stack[1].to_uint64();
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(4, 1) = stack[0].to_uint64();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         evmc::bytes32 key = stack.pop().to_uint256be();
         evmc::bytes32 value = stack.pop().to_uint256be();
         state.host.set_transient_storage(state.msg->recipient, key, value);
+        // TODO: add trasient storage operations
         return {EVMC_SUCCESS, gas_left};
     }
 
-    static void push0(StackTop<BlueprintFieldType> stack) noexcept
+    static void push0(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push({});
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     /// PUSH instruction implementation.
@@ -920,7 +1090,7 @@ struct instructions {
     ///
     /// It assumes that at lest 32 bytes of data are available so code padding is required.
     template <size_t Len>
-    static code_iterator push(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& /*state*/, code_iterator pos) noexcept
+    static code_iterator push(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         // TODO size of field in bytes
         constexpr size_t word_size = 8;
@@ -945,31 +1115,42 @@ struct instructions {
             data += word_size;
         }
 
+        int num_words = (int)(Len / nil::blueprint::zkevm_word<BlueprintFieldType>::size) + (int)(Len % nil::blueprint::zkevm_word<BlueprintFieldType>::size);
+        for (int i = 0; i < num_words; ++i) {
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom())- 1 - i), state.rw_trace.size(), true, stack[i]));
+        }
+
         return pos + (Len + 1);
     }
 
     /// DUP instruction implementation.
     /// @tparam N  The number as in the instruction definition, e.g. DUP3 is dup<3>.
     template <int N>
-    static void dup(StackTop<BlueprintFieldType> stack) noexcept
+    static void dup(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         static_assert(N >= 0 && N <= 16);
         if constexpr (N == 0)
         {
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
             const auto index = stack.pop();
-            assert(index.to_uint64() < std::numeric_limits<int>::max());
-            stack.push(stack[(int)index.to_uint64() - 1]);
+            const auto addr = (int)index.to_uint64();
+            assert(addr < std::numeric_limits<int>::max());
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - addr), state.rw_trace.size(), false, stack[addr - 1]));
+            stack.push(stack[addr - 1]);
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())- 1, state.rw_trace.size(), true, stack[0]));
         }
         else
         {
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - N, state.rw_trace.size(), false, stack[N - 1]));
             stack.push(stack[N - 1]);
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())- 1, state.rw_trace.size(), true, stack[0]));
         }
     }
 
     /// SWAP instruction implementation.
     /// @tparam N  The number as in the instruction definition, e.g. SWAP3 is swap<3>.
     template <int N>
-    static void swap(StackTop<BlueprintFieldType> stack) noexcept
+    static void swap(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         static_assert(N >= 0 && N <= 16);
 
@@ -977,16 +1158,21 @@ struct instructions {
         // clang missed optimization: https://github.com/llvm/llvm-project/issues/59116
         // TODO(clang): Check if #59116 bug fix has been released.
         nil::blueprint::zkevm_word<BlueprintFieldType>* a;
+        uint16_t addr = N;
         if constexpr (N == 0)
         {
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
             auto& index = stack.pop();
             assert(index < std::numeric_limits<int>::max());
-            a = &stack[(int)index.to_uint64()];
+            addr = (uint16_t)index.to_uint64();
+            a = &stack[addr];
         }
         else
         {
             a = &stack[N];
         }
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - addr - 1), state.rw_trace.size(), false, stack[addr]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         auto& t = stack.top();
         auto t0 = t.to_uint64(0);
         auto t1 = t.to_uint64(1);
@@ -997,13 +1183,15 @@ struct instructions {
         a->set_val(t1, 1);
         a->set_val(t2, 2);
         a->set_val(t3, 3);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())- 1, state.rw_trace.size(), true, stack[0]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - addr), state.rw_trace.size(), true, stack[addr - 1]));
     }
 
     static code_iterator dupn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
-        const auto n = pos[1] + 1;
+        const uint16_t n = pos[1] + 1;
 
-        const auto stack_size = &stack.top() - state.stack_space.bottom();
+        const uint16_t stack_size = (uint16_t)(&stack.top() - state.stack_space.bottom());
 
         if (stack_size < n)
         {
@@ -1011,7 +1199,9 @@ struct instructions {
             return nullptr;
         }
 
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - n), state.rw_trace.size(), false, stack[n - 1]));
         stack.push(stack[n - 1]);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())- 1, state.rw_trace.size(), true, stack[0]));
 
         return pos + 2;
     }
@@ -1028,14 +1218,21 @@ struct instructions {
             return nullptr;
         }
 
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - n - 1), state.rw_trace.size(), false, stack[n]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
         // TODO: This may not be optimal, see instr::core::swap().
         std::swap(stack.top(), stack[n]);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())- 1, state.rw_trace.size(), true, stack[0]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - n - 1), state.rw_trace.size(), true, stack[n]));
 
         return pos + 2;
     }
 
     static Result mcopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
         const auto& dst_u256 = stack.pop();
         const auto& src_u256 = stack.pop();
         const auto& size_u256 = stack.pop();
@@ -1050,16 +1247,23 @@ struct instructions {
         if (const auto cost = copy_cost(size); (gas_left -= cost) < 0)
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        if (size > 0)
+        if (size > 0) {
             std::memmove(&state.memory[dst], &state.memory[src], size);
+            // TODO: add length read operations to memory
+            // TODO: add length write operations to memory
+            /*for(uint64_t j = 0; j < size; j++){
+                state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  src + j, state.rw_trace.size(), false, state.memory[src + j]));
+                state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  dst + j, state.rw_trace.size(), true, state.memory[dst + j]));
+            }*/
+        }
 
         return {EVMC_SUCCESS, gas_left};
     }
 
     static void dataload(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
         auto& index = stack.top();
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(1, 2) = index.to_uint64();
 
         if (state.data.size() < index.to_uint64())
             index = 0;
@@ -1073,24 +1277,30 @@ struct instructions {
                 data[i] = state.data[begin + i];
 
             index = nil::blueprint::zkevm_word<BlueprintFieldType>(data, (end - begin));
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), true, stack[0]));
         }
     }
 
     static void datasize(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
         stack.push(state.data.size());
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), true, stack[0]));
     }
 
     static code_iterator dataloadn(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state, code_iterator pos) noexcept
     {
         const auto index = read_uint16_be(&pos[1]);
 
-        stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(&state.data[index], (BlueprintFieldType::modulus_bits / 8)));
+        stack.push(nil::blueprint::zkevm_word<BlueprintFieldType>(&state.data[index], nil::blueprint::zkevm_word<BlueprintFieldType>::size));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), true, stack[0]));
         return pos + 3;
     }
 
     static Result datacopy(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 3, state.rw_trace.size(), false, stack[2]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
         const auto& mem_index = stack.pop();
         const auto& data_index = stack.pop();
         const auto& size = stack.pop();
@@ -1109,11 +1319,19 @@ struct instructions {
         if (const auto cost = copy_cost(s); (gas_left -= cost) < 0)
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        if (copy_size > 0)
+        if (copy_size > 0) {
             std::memcpy(&state.memory[dst], &state.data[src], copy_size);
+            for(uint64_t j = 0; j < copy_size; j++){
+                state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  dst + j, state.rw_trace.size(), true, state.memory[dst + j]));
+            }
+        }
 
-        if (s - copy_size > 0)
+        if (s - copy_size > 0) {
             std::memset(&state.memory[dst + copy_size], 0, s - copy_size);
+            for(uint64_t j = 0; j < s - copy_size; j++){
+                state.rw_trace.push_back(nil::blueprint::memory_operation<BlueprintFieldType>(state.call_id,  dst + j, state.rw_trace.size(), true, 0));
+            }
+        }
 
         return {EVMC_SUCCESS, gas_left};
     }
@@ -1122,6 +1340,10 @@ struct instructions {
     {
         assert(Op == OP_CALL || Op == OP_CALLCODE || Op == OP_DELEGATECALL || Op == OP_STATICCALL);
 
+        uint16_t num_stack_read = (Op == OP_STATICCALL || Op == OP_DELEGATECALL) ? 6 : 7;
+        for (uint16_t i = 0; i < num_stack_read; i++) {
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - (i + 1)), state.rw_trace.size(), false, stack[i]));
+        }
         const auto gas = stack.pop();
         const auto dst = stack.pop().to_address();
         const auto value = (Op == OP_STATICCALL || Op == OP_DELEGATECALL) ? 0 : stack.pop();
@@ -1224,6 +1446,7 @@ struct instructions {
         const auto result = state.host.call(msg);
         state.return_data.assign(result.output_data, result.output_size);
         stack.top() = result.status_code == EVMC_SUCCESS;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), true, stack[0]));
 
         if (const auto copy_size = std::min(output_size, result.output_size); copy_size > 0)
             std::memcpy(&state.memory[output_offset], result.output_data, copy_size);
@@ -1256,6 +1479,10 @@ struct instructions {
         if (state.in_static_mode())
             return {EVMC_STATIC_MODE_VIOLATION, gas_left};
 
+        uint16_t num_stack_read = (Op == OP_CREATE2) ? 4 : 3;
+        for (uint16_t i = 0; i < num_stack_read; i++) {
+            state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  (uint16_t)(stack.size(state.stack_space.bottom()) - (i + 1)), state.rw_trace.size(), false, stack[i]));
+        }
         const auto endowment = stack.pop();
         const auto init_code_offset_u256 = stack.pop();
         const auto init_code_size_u256 = stack.pop();
@@ -1309,6 +1536,7 @@ struct instructions {
         state.return_data.assign(result.output_data, result.output_size);
         if (result.status_code == EVMC_SUCCESS)
             stack.top() = nil::blueprint::zkevm_word<BlueprintFieldType>(result.create_address);
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), true, stack[0]));
 
         return {EVMC_SUCCESS, gas_left};
     }
@@ -1376,6 +1604,8 @@ struct instructions {
 
     static TermResult return_impl(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state, evmc_status_code StatusCode) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom()) - 2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
         const auto& offset = stack[0];
         const auto& size = stack[1];
 
@@ -1400,6 +1630,7 @@ struct instructions {
         if (state.in_static_mode())
             return {EVMC_STATIC_MODE_VIOLATION, gas_left};
 
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
         const auto beneficiary = stack[0].to_address();
 
         if (state.rev >= EVMC_BERLIN && state.host.access_account(beneficiary) == EVMC_ACCESS_COLD)
@@ -1432,6 +1663,7 @@ struct instructions {
 
     static Result sload(StackTop<BlueprintFieldType> stack, int64_t gas_left, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
         auto& x = stack.top();
         const auto key = x.to_uint256be();
 
@@ -1446,8 +1678,18 @@ struct instructions {
                 return {EVMC_OUT_OF_GAS, gas_left};
         }
 
-        x = nil::blueprint::zkevm_word<BlueprintFieldType>(state.host.get_storage(state.msg->recipient, key));
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(3, 2) = x.to_uint64();
+        const auto value = nil::blueprint::zkevm_word<BlueprintFieldType>(state.host.get_storage(state.msg->recipient, key));
+        state.rw_trace.push_back(storage_operation<BlueprintFieldType>(
+                        state.call_id,
+                        nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->recipient),// should be transaction_id), WHY???
+                        x,
+                        state.rw_trace.size(),
+                        false,
+                        value,
+                        value
+                    ));
+        x = value;
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), true, stack[0]));
 
         return {EVMC_SUCCESS, gas_left};
     }
@@ -1460,17 +1702,28 @@ struct instructions {
         if (state.rev >= EVMC_ISTANBUL && gas_left <= 2300)
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(3, 0) = stack[1].to_uint64();
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(3, 1) = stack[0].to_uint64();
-        const auto key = stack.pop().to_uint256be();
-        const auto value = stack.pop().to_uint256be();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom()) - 2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom()) - 1, state.rw_trace.size(), false, stack[0]));
+        const auto key = stack.pop();
+        const auto value = stack.pop();
+        const auto key_uint64 = key.to_uint256be();
+        const auto value_uint64 = value.to_uint256be();
 
         const auto gas_cost_cold =
             (state.rev >= EVMC_BERLIN &&
-                state.host.access_storage(state.msg->recipient, key) == EVMC_ACCESS_COLD) ?
+                state.host.access_storage(state.msg->recipient, key_uint64) == EVMC_ACCESS_COLD) ?
                 instr::cold_sload_cost :
                 0;
-        const auto status = state.host.set_storage(state.msg->recipient, key, value);
+        state.rw_trace.push_back(storage_operation<BlueprintFieldType>(
+                        state.call_id,//TODO should be transaction_id)
+                        nil::blueprint::zkevm_word<BlueprintFieldType>(state.msg->recipient),
+                        key,
+                        state.rw_trace.size(),
+                        true,
+                        value,
+                        state.host.get_storage(state.msg->recipient, key_uint64)
+                    ));
+        const auto status = state.host.set_storage(state.msg->recipient, key_uint64, value_uint64);
 
         const auto [gas_cost_warm, gas_refund] = sstore_costs[state.rev][status];
         const auto gas_cost = gas_cost_warm + gas_cost_cold;

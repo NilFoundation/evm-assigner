@@ -15,8 +15,9 @@ add_library(${PROJECT_NAME} STATIC ${evmone_sources})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
+find_package(Boost REQUIRED COMPONENTS container random filesystem log log_setup program_options thread system)
 find_package(crypto3 REQUIRED)
-find_package(blueprint_crypto3 REQUIRED)
+find_package(crypto3_blueprint REQUIRED)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -24,7 +25,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/evmone>)
 
 target_link_libraries(${PROJECT_NAME}
-                      PUBLIC evmc::evmc intx::intx crypto3::all blueprint ethash::keccak)
+                      PUBLIC evmc::evmc intx::intx crypto3::all crypto3::blueprint ethash::keccak)
 
 set_target_properties(
     ${PROJECT_NAME}

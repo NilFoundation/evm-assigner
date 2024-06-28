@@ -28,6 +28,7 @@ namespace nil {
         struct zkevm_word {
             using column_type_t = typename crypto3::zk::snark::plonk_column<BlueprintFieldType>;
             using value_type = intx::uint256;
+            static constexpr uint64_t size = sizeof(value_type);
             // constructors
             zkevm_word() {
                 value = 0;
@@ -138,6 +139,17 @@ namespace nil {
                 return value & other.value;
             }
 
+            typename BlueprintFieldType::integral_type operator&(const typename BlueprintFieldType::integral_type& other) const {
+                typename BlueprintFieldType::integral_type val = value[0];
+                typename BlueprintFieldType::integral_type lo = value[1];
+                typename BlueprintFieldType::integral_type hi = value[2];
+                typename BlueprintFieldType::integral_type h = value[3];
+                val += lo << 64;
+                val += hi << 126;
+                val += h << 192;
+                return val & other;
+            }
+
             zkevm_word<BlueprintFieldType> operator|(const zkevm_word<BlueprintFieldType>& other) const {
                 return value | other.value;
             }
@@ -177,6 +189,15 @@ namespace nil {
 
             evmc::address to_address() const {
                 return intx::be::trunc<evmc::address>(value);
+            }
+
+            typename BlueprintFieldType::value_type to_field_as_address() const {
+                typename BlueprintFieldType::integral_type res = value[0];
+                typename BlueprintFieldType::integral_type lo = value[1];
+                typename BlueprintFieldType::integral_type hi = value[2];
+                res += lo << 64;
+                res += hi << 128;
+                return res;
             }
 
             evmc::uint256be to_uint256be() const {
@@ -221,12 +242,32 @@ namespace nil {
                 return reinterpret_cast<const uint8_t *>(&value);
             }
 
-            uint64_t size() const {
-                return sizeof(value);
+            typename BlueprintFieldType::value_type w_hi() const {
+                typename BlueprintFieldType::integral_type res = value[3];
+                res = res << 64;
+                res += value[2];
+                return res;
             }
+
+            typename BlueprintFieldType::value_type w_lo() const {
+                typename BlueprintFieldType::integral_type res = value[1];
+                res = res << 64;
+                res += value[0];
+                return res;
+            }
+
         private:
                 intx::uint256 value;
         };
+
+        template <typename BlueprintFieldType>
+        std::ostream& operator<<(std::ostream& os, const zkevm_word<BlueprintFieldType>& obj){
+            const auto bytes = obj.to_uint256be().bytes;
+            for (uint8_t i = 0; i < 32; i++) {
+                os << (int)bytes[i] << " ";
+            }
+            return os;
+        }
     }     // namespace blueprint
 }    // namespace nil
 #endif    // EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ZKEVM_WORD_HPP_

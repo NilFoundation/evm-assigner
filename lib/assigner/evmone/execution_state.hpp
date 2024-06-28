@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <zkevm_word.hpp>
+#include <rw.hpp>
 
 namespace nil {
     namespace blueprint {
@@ -143,6 +144,9 @@ public:
     evmc_status_code status = EVMC_SUCCESS;
     size_t output_offset = 0;
     size_t output_size = 0;
+
+    std::size_t call_id;
+    std::vector<nil::blueprint::rw_operation<BlueprintFieldType>> rw_trace;
     std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner;
 
 private:
@@ -167,12 +171,13 @@ public:
 
     ExecutionState(const evmc_message& message, evmc_revision revision,
         const evmc_host_interface& host_interface, evmc_host_context* host_ctx, bytes_view _code,
-        bytes_view _data, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
+        bytes_view _data, size_t _call_id, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
       : msg{&message},
         host{host_interface, host_ctx},
         rev{revision},
         original_code{_code},
         data{_data},
+        call_id{_call_id},
         assigner{_assigner}
     {}
 
