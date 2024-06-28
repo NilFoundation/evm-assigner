@@ -38,6 +38,9 @@ public:
 
     /// Assigns the value to the stack top and moves the stack top pointer up.
     void push(const nil::blueprint::zkevm_word<BlueprintFieldType>& value) noexcept { *++m_top = value; }
+
+    /// size of stack
+    uint16_t size(nil::blueprint::zkevm_word<BlueprintFieldType>* bottom) noexcept { return (m_top > bottom) ? (uint16_t)(m_top - bottom) : 0; }
 };
 
 
@@ -249,21 +252,28 @@ struct instructions {
         return stop_impl(stack, gas_left, state, EVMC_INVALID_INSTRUCTION);
     }
 
-    static void add(StackTop<BlueprintFieldType> stack) noexcept
+    static void add(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        stack.top() = stack.top() + stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
+        stack.top() = stack.top() + stack.pop();// calculate stack next
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void mul(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(0, 0) = stack[0].to_uint64();
-        state.assigner->m_assignments[static_cast<std::uint32_t>(state.msg->depth)].witness(0, 1) = stack[1].to_uint64();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack.top() = stack.top() * stack.pop();
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
-    static void sub(StackTop<BlueprintFieldType> stack) noexcept
+    static void sub(StackTop<BlueprintFieldType> stack, ExecutionState<BlueprintFieldType>& state) noexcept
     {
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         stack[1] = stack[0] - stack[1];
+        state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
     static void div(StackTop<BlueprintFieldType> stack) noexcept

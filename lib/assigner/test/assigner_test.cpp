@@ -17,7 +17,7 @@ public:
     using ArithmetizationType = nil::crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
     static void SetUpTestSuite()
     {
-        const std::size_t WitnessColumns = 15;
+        const std::size_t WitnessColumns = 65;
         const std::size_t PublicInputColumns = 1;
 
         const std::size_t ConstantColumns = 5;
@@ -92,6 +92,39 @@ inline void check_eq(const uint8_t* l, const uint8_t* r, size_t len) {
     }
 }
 
+inline void rw_circuit_check(const std::vector<nil::blueprint::assignment<AssignerTest::ArithmetizationType>> assignments,
+                             uint32_t start_row_index,
+                             uint8_t operation_type,
+                             uint32_t call_id,
+                             const typename AssignerTest::BlueprintFieldType::value_type& address,
+                             const typename AssignerTest::BlueprintFieldType::value_type& stoage_key_hi,
+                             const typename AssignerTest::BlueprintFieldType::value_type& stoage_key_lo,
+                             uint32_t rw_id,
+                             bool is_write,
+                             const typename AssignerTest::BlueprintFieldType::value_type& value_hi,
+                             const typename AssignerTest::BlueprintFieldType::value_type& value_lo) {
+    // OP_TYPE
+    EXPECT_EQ(assignments[0].witness(0, start_row_index), operation_type);
+    // CALL ID
+    EXPECT_EQ(assignments[0].witness(1, start_row_index), call_id);
+    // address (stack size)
+    EXPECT_EQ(assignments[0].witness(2, start_row_index), address);
+    // storage key hi
+    EXPECT_EQ(assignments[0].witness(3, start_row_index), stoage_key_hi);
+    // storage key lo
+    EXPECT_EQ(assignments[0].witness(4, start_row_index), stoage_key_lo);
+    // FIELD TYPE
+    EXPECT_EQ(assignments[0].witness(5, start_row_index), 0);
+    // RW ID
+    EXPECT_EQ(assignments[0].witness(6, start_row_index), rw_id);
+    // is write
+    EXPECT_EQ(assignments[0].witness(7, start_row_index), (is_write ? 1 : 0));
+    // value hi
+    EXPECT_EQ(assignments[0].witness(8, start_row_index), value_hi);
+    // value lo
+    EXPECT_EQ(assignments[0].witness(9, start_row_index), value_lo);
+}
+
 TEST_F(AssignerTest, conversions_uint256be_to_zkevm_word)
 {
     evmc::uint256be uint256be_number;
@@ -164,8 +197,11 @@ TEST_F(AssignerTest, mul) {
     };
 
     nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
-    EXPECT_EQ(assignments[0].witness(0, 0), 8);
-    EXPECT_EQ(assignments[0].witness(0, 1), 4);
+
+    uint32_t start_row_index = 5;
+    uint32_t call_id = 0;
+    rw_circuit_check(assignments, start_row_index, 1/*STACK_OP*/, call_id, 0/*address in stack*/, 0/*storage key hi*/, 0/*storage key lo*/,
+                     0/*trace size*/, false/*is_write*/, 0/*value_hi*/, 4/*value_lo*/);
 }
 
 TEST_F(AssignerTest, callvalue_calldataload)
