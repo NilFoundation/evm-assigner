@@ -8,7 +8,8 @@
 #ifndef EVM1_ASSIGNER_INCLUDE_BYTECODE_HPP_
 #define EVM1_ASSIGNER_INCLUDE_BYTECODE_HPP_
 
-#include <assigner.hpp>
+#include <nil/crypto3/algebra/curves/pallas.hpp>
+#include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/keccak.hpp>
