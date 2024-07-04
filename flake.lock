@@ -36,7 +36,7 @@
         "type": "github"
       }
     },
-    "nil_crypto3": {
+    "nil-crypto3": {
       "inputs": {
         "nix-3rdparty": "nix-3rdparty",
         "nixpkgs": [
@@ -44,11 +44,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1718821034,
-        "narHash": "sha256-j3fsPiltYzctIgAWakAHdPLAxq+UiXXnKNmAu+oN7Us=",
+        "lastModified": 1720036529,
+        "narHash": "sha256-Ub38Lwsy0PzQtJ+3cfqbVVAXrDuu0A4i1i3vPT9Nxa0=",
         "ref": "refs/heads/master",
-        "rev": "caf78b83692b39f504c4ee74a3834a4c38662a77",
-        "revCount": 9146,
+        "rev": "c34662a28869af63afc67789435390a2a8f3c708",
+        "revCount": 9148,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/NilFoundation/crypto3"
@@ -59,24 +59,24 @@
         "url": "https://github.com/NilFoundation/crypto3"
       }
     },
-    "nil_zkllvm_blueprint": {
+    "nil-zkllvm-blueprint": {
       "inputs": {
         "flake-utils": [
           "flake-utils"
         ],
-        "nil_crypto3": [
-          "nil_crypto3"
+        "nil-crypto3": [
+          "nil-crypto3"
         ],
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1719590043,
-        "narHash": "sha256-C2O0EAmWOR+Fq+lNqumwd7YS9+TBDkWGNpS1CjCAwvY=",
+        "lastModified": 1720092182,
+        "narHash": "sha256-WTjhgYwkHjDCSDmDX1SwCH+cuz6OWl9vQaOYCUKOw7c=",
         "ref": "refs/heads/master",
-        "rev": "84ebc6dbdd94256424904c8270cb16d764236a31",
-        "revCount": 1243,
+        "rev": "73d6a40e39b6b6fc7b1c84441e62337206dc0815",
+        "revCount": 1246,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/NilFoundation/zkllvm-blueprint"
@@ -91,7 +91,7 @@
       "inputs": {
         "flake-utils": "flake-utils_2",
         "nixpkgs": [
-          "nil_crypto3",
+          "nil-crypto3",
           "nixpkgs"
         ]
       },
@@ -151,8 +151,8 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nil_crypto3": "nil_crypto3",
-        "nil_zkllvm_blueprint": "nil_zkllvm_blueprint",
+        "nil-crypto3": "nil-crypto3",
+        "nil-zkllvm-blueprint": "nil-zkllvm-blueprint",
         "nix-3rdparty": "nix-3rdparty_2",
         "nixpkgs": "nixpkgs"
       }

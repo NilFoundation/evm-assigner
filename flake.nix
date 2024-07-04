@@ -11,7 +11,7 @@
         flake-utils.follows = "flake-utils";
       };
     };
-    nil_crypto3 = {
+    nil-crypto3 = {
       url = "https://github.com/NilFoundation/crypto3";
       type = "git";
       submodules = true;
@@ -19,14 +19,14 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
-    nil_zkllvm_blueprint = {
+    nil-zkllvm-blueprint = {
       url = "https://github.com/NilFoundation/zkllvm-blueprint";
       type = "git";
       submodules = true;
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
-        nil_crypto3.follows = "nil_crypto3";
+        nil-crypto3.follows = "nil-crypto3";
       };
     };
   };
@@ -50,12 +50,12 @@
         # Add more complicated logic here if you need to have debug packages
         resolveInput = input: input.packages.${system}.default;
 
-        nil_inputs = with inputs; [
-          nil_crypto3
-          nil_zkllvm_blueprint
+        nil-inputs = with inputs; [
+          nil-crypto3
+          nil-zkllvm-blueprint
         ];
 
-        nil_packages = map resolveInput nil_inputs;
+        nil-packages = map resolveInput nil-inputs;
 
         defaultNativeBuildInputs = with pkgs; [
           cmake
@@ -77,7 +77,7 @@
               ethash
             ];
           in
-          deps ++ nil_packages;
+          deps ++ nil-packages;
 
         devInputs = [ pkgs.clang_17 ];
 
