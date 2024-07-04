@@ -11,6 +11,10 @@
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/trivial.hpp>
+
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/keccak.hpp>
 #include <nil/crypto3/random/algebraic_engine.hpp>
@@ -24,19 +28,18 @@ namespace nil {
             using value_type = typename BlueprintFieldType::value_type;
             using hash_type = nil::crypto3::hashes::keccak_1600<256>;
 
-            std::cout << "MYINFO: <Enter dispatch function>" << std::endl;
-            std::cout << "MYINFO: bytecode size: " << original_code_size << std::endl;
-            std::cout << "MYINFO: bytecode: " << std::endl;
+            BOOST_LOG_TRIVIAL(debug) << "Process bytecode circuit\n";
+            BOOST_LOG_TRIVIAL(debug) << "Bytecode size: " << original_code_size << "\n";
+            BOOST_LOG_TRIVIAL(debug) << "Bytecode: " << std::endl;
 
             std::vector<std::uint8_t> bytecode;
             for (size_t i = 0; i < original_code_size; i++) {
                 const auto op = code[i];
                 bytecode.push_back(op);
-                std::cout << (uint)op << " ";
+                BOOST_LOG_TRIVIAL(debug) << (uint)op << " ";
             }
-            std::cout << std::endl;
+            BOOST_LOG_TRIVIAL(debug) << "\n";
 
-            std::cout << "MYINFO: <get hashcode>:" << std::endl;
             std::string hash = nil::crypto3::hash<nil::crypto3::hashes::keccak_1600<256>>(bytecode.begin(), bytecode.end());
             std::string str_hi = hash.substr(0, hash.size()-32);
             std::string str_lo = hash.substr(hash.size()-32, 32);
@@ -44,7 +47,7 @@ namespace nil {
             value_type hash_lo;
             for( std::size_t j = 0; j < str_hi.size(); j++ ){hash_hi *=16; hash_hi += str_hi[j] >= '0' && str_hi[j] <= '9'? str_hi[j] - '0' : str_hi[j] - 'a' + 10;}
             for( std::size_t j = 0; j < str_lo.size(); j++ ){hash_lo *=16; hash_lo += str_lo[j] >= '0' && str_lo[j] <= '9'? str_lo[j] - '0' : str_lo[j] - 'a' + 10;}
-            std::cout << std::hex <<  "Contract hash = " << hash << " h:" << hash_hi << " l:" << hash_lo << std::dec << std::endl;
+            BOOST_LOG_TRIVIAL(debug) << std::hex <<  "Contract hash = " << hash << " h:" << hash_hi << " l:" << hash_lo << std::dec << "\n";
 
             static constexpr uint32_t TAG = 0;
             static constexpr uint32_t INDEX = 1;

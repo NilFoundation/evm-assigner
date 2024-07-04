@@ -11,6 +11,10 @@
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/trivial.hpp>
+
 #include <zkevm_word.hpp>
 
 namespace nil {
@@ -160,8 +164,8 @@ namespace nil {
 
             uint32_t start_row_index = assignments[0].witness_column_size(OP);
 
-            std::cout << "process_rw_operations" << std::endl;
-            std::cout << "Start row index: " << start_row_index << std::endl;
+            BOOST_LOG_TRIVIAL(debug) << "Process RW circuit\n";
+            BOOST_LOG_TRIVIAL(debug) << "Start row index: " << start_row_index << "\n";
 
             std::vector<uint32_t> sorting = {
                 OP,
@@ -183,7 +187,9 @@ namespace nil {
             //sort operations
             std::sort(rw_trace.begin(), rw_trace.end());
 
+            BOOST_LOG_TRIVIAL(debug) << "Num operations = " << rw_trace.size() << "\n";
             for(uint32_t i = 0; i < rw_trace.size(); i++){
+                BOOST_LOG_TRIVIAL(debug) << rw_trace[i] << "\n";
                 // Lookup columns
                 assignments[0].witness(OP, start_row_index + i) = rw_trace[i].op;
                 assignments[0].witness(ID, start_row_index + i) = rw_trace[i].id;
@@ -266,10 +272,10 @@ namespace nil {
                 assignments[0].witness(DIFFERENCE, start_row_index + i) =
                     assignments[0].witness(sorting[diff_ind], start_row_index+i) -
                     assignments[0].witness(sorting[diff_ind], start_row_index+i - 1);
-                std::cout << "Diff index = " << diff_ind <<
+                BOOST_LOG_TRIVIAL(debug) << "Diff index = " << diff_ind <<
                     " is_first = " << assignments[0].witness(IS_FIRST, start_row_index + i) <<
                     " is_last = " << assignments[0].witness(IS_LAST, start_row_index + i) <<
-                    std::endl;
+                    "\n";
 
                 if( assignments[0].witness(DIFFERENCE, start_row_index + i) == 0)
                     assignments[0].witness(INV_DIFFERENCE, start_row_index + i) = 0;

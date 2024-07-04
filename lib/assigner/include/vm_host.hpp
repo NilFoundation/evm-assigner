@@ -49,12 +49,12 @@ class VMHost : public evmc::Host
 
 public:
     VMHost() = default;
-    explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
-      : tx_context{_tx_context}, assigner{_assigner}
+    explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner, const std::string& _target_circuit = "") noexcept
+      : tx_context{_tx_context}, assigner{_assigner}, target_circuit{_target_circuit}
     {}
 
-    VMHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
-      : accounts{_accounts}, tx_context{_tx_context}, assigner{_assigner}
+    VMHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner, const std::string& _target_circuit = "") noexcept
+      : accounts{_accounts}, tx_context{_tx_context}, assigner{_assigner}, target_circuit{_target_circuit}
     {}
 
     bool account_exists(const evmc::address& addr) const noexcept final
@@ -216,6 +216,7 @@ public:
 
 private:
     std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner;
+    std::string target_circuit;
 
     evmc::Result handle_call(const evmc_message& msg) {
         auto sender_iter = accounts.find(msg.sender);
@@ -245,7 +246,7 @@ private:
         }
         // TODO: handle precompiled contracts
         evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
-                                                                        EVMC_LATEST_STABLE_REVISION, &msg, acc.code.data(), acc.code.size(), assigner);
+                                                                        EVMC_LATEST_STABLE_REVISION, &msg, acc.code.data(), acc.code.size(), assigner, target_circuit);
         return res;
     }
 
@@ -267,7 +268,7 @@ private:
         init_msg.sender = msg.sender;
         init_msg.input_size = 0;
         evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
-                                                                        EVMC_LATEST_STABLE_REVISION, &init_msg, msg.input_data, msg.input_size, assigner);
+                                                                        EVMC_LATEST_STABLE_REVISION, &init_msg, msg.input_data, msg.input_size, assigner, target_circuit);
         if (res.status_code == EVMC_SUCCESS)
         {
             accounts[new_contract_address].code =

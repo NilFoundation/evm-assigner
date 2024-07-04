@@ -15,7 +15,6 @@ add_library(${PROJECT_NAME} STATIC ${evmone_sources})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
-find_package(Boost REQUIRED COMPONENTS container random filesystem log log_setup program_options thread system)
 find_package(crypto3 REQUIRED)
 find_package(crypto3_blueprint REQUIRED)
 

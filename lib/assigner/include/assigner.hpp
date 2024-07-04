@@ -10,6 +10,10 @@
 
 #include <evmc/evmc.hpp>
 
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/trivial.hpp>
+
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
@@ -19,6 +23,18 @@
 
 namespace nil {
     namespace blueprint {
+
+        enum zkevm_circuit : uint8_t {
+            ALL = 0xFF,
+            BYTECODE = 0x1,
+            RW = 0x2
+        };
+
+        static const std::map<std::string, zkevm_circuit> zkevm_circuits_map = {
+            {"", zkevm_circuit::ALL},
+            {"bytecode", zkevm_circuit::BYTECODE},
+            {"rw", zkevm_circuit::RW}
+        };
 
         template<typename BlueprintFieldType>
         struct assigner {
@@ -43,7 +59,13 @@ namespace nil {
         template<typename BlueprintFieldType>
         static evmc::Result evaluate(const evmc_host_interface* host, evmc_host_context* ctx,
                                 evmc_revision rev, const evmc_message* msg, const uint8_t* code_ptr, size_t code_size,
-                                std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner) {
+                                std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner, const std::string& target_circuit = "") {
+            if(zkevm_circuits_map.find(target_circuit) == zkevm_circuits_map.end()) {
+                std::cerr << "Unknown target circuit " << target_circuit << "\n";
+                return evmc::Result{EVMC_FAILURE, msg->gas};
+            }
+            const auto zkevm_target_circuit = zkevm_circuits_map.find(target_circuit)->second;
+
             const evmone::bytes_view container{code_ptr, code_size};
             const auto code_analysis = evmone::baseline::analyze(rev, container);
             const auto data = code_analysis.eof_header.get_data(container);
@@ -53,16 +75,24 @@ namespace nil {
             const auto code = code_analysis.executable_code;
 
             // fill assignments for bytecode circuit
-            assigner->handle_bytcode(state.original_code.size(), code.data());
+            if (zkevm_target_circuit & zkevm_circuit::BYTECODE) {
+                assigner->handle_bytcode(state.original_code.size(), code.data());
+            }
 
             int64_t gas = msg->gas;
 
             const auto& cost_table = evmone::baseline::get_baseline_cost_table(state.rev, code_analysis.eof_header.version);
 
+            BOOST_LOG_TRIVIAL(debug) << "Run evaluate\n";
+
             gas = evmone::baseline::dispatch<false>(cost_table, state, msg->gas, code.data());
 
+            BOOST_LOG_TRIVIAL(debug) << "Evaluate result = " << state.status << "\n";
+
             // fill assignments for read/write circuit
-            assigner->handle_rw(state.rw_trace);
+            if (zkevm_target_circuit & zkevm_circuit::RW) {
+                assigner->handle_rw(state.rw_trace);
+            }
 
             const auto gas_left = (state.status == EVMC_SUCCESS || state.status == EVMC_REVERT) ? gas : 0;
             const auto gas_refund = (state.status == EVMC_SUCCESS) ? state.gas_refund : 0;
