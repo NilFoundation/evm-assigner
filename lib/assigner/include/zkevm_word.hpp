@@ -38,6 +38,10 @@ namespace nil {
                 value = v;
             }
 
+            zkevm_word(uint32_t v) {
+                value = v;
+            }
+
             zkevm_word(int64_t v) {
                 value = v;
             }
@@ -48,6 +52,10 @@ namespace nil {
 
             zkevm_word(const intx::uint256& v) {
                 value = v;
+            }
+
+            zkevm_word(uint64_t v0,uint64_t v1,uint64_t v2,uint64_t v3) {
+                value = {v0, v1, v2, v3};
             }
 
             zkevm_word(const evmc::uint256be& v) {

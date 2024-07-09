@@ -336,9 +336,9 @@ struct instructions {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-3, state.rw_trace.size(), false, stack[2]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        const auto& x = stack[0];
-        const auto& y = stack[1];
-        auto& m = stack[2];
+        const auto& x = stack.pop();
+        const auto& y = stack.pop();
+        auto& m = stack.top();
         m = x.mulmod(y, m);
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
@@ -966,8 +966,8 @@ struct instructions {
         if (!check_memory(gas_left, state.memory, index, 1))
             return {EVMC_OUT_OF_GAS, gas_left};
 
-        const auto addr = (int)index.to_uint64();
-        state.memory[addr] = value.to_uint64();
+        const auto addr = index.to_uint64();
+        value.template store<uint64_t>(&state.memory[addr]);
         for(uint64_t j = 0; j < 8; j++){
             state.rw_trace.push_back(nil::evm_assigner::memory_operation<BlueprintFieldType>(state.call_id,  addr + j, state.rw_trace.size(), true, state.memory[addr + j]));
         }
