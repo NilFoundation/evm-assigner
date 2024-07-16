@@ -256,7 +256,8 @@ struct instructions {
     {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        stack.top() = stack.top() + stack.pop();// calculate stack next
+        const auto& x = stack.pop();
+        stack.top() = stack.top() + x;// calculate stack next
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id, stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
@@ -264,7 +265,8 @@ struct instructions {
     {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        stack.top() = stack.top() * stack.pop();
+        const auto& x = stack.pop();
+        stack.top() = stack.top() * x;
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
@@ -273,7 +275,7 @@ struct instructions {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
         const auto& x = stack.pop();
-        stack[0] = x - stack[0];
+        stack.top() = x - stack.top();
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
@@ -451,7 +453,8 @@ struct instructions {
     {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        stack.top() = stack.top() & stack.pop();
+        const auto& x = stack.pop();
+        stack.top() = stack.top() & x;
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
@@ -459,7 +462,8 @@ struct instructions {
     {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        stack.top() = stack.top() | stack.pop();
+        const auto& x = stack.pop();
+        stack.top() = stack.top() | x;
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
@@ -467,7 +471,8 @@ struct instructions {
     {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        stack.top() = stack.top() ^stack.pop();
+        const auto& x = stack.pop();
+        stack.top() = stack.top() ^ x;
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
@@ -500,7 +505,8 @@ struct instructions {
     {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        stack.top() = stack.top() << stack.pop();
+        const auto& x = stack.pop();
+        stack.top() = stack.top() << x;
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
@@ -508,7 +514,8 @@ struct instructions {
     {
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-2, state.rw_trace.size(), false, stack[1]));
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), false, stack[0]));
-        stack.top() = stack.top() >> stack.pop();
+        const auto& x = stack.pop();
+        stack.top() = stack.top() >> x;
         state.rw_trace.push_back(stack_operation<BlueprintFieldType>(state.call_id,  stack.size(state.stack_space.bottom())-1, state.rw_trace.size(), true, stack[0]));
     }
 
