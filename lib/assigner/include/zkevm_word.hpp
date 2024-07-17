@@ -8,7 +8,7 @@
 #ifndef EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ZKEVM_WORD_HPP_
 #define EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ZKEVM_WORD_HPP_
 
-#include <evmc/evmc.h>
+#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <ethash/keccak.hpp>
 
@@ -42,7 +42,7 @@ namespace nil {
                 value = v;
             }
 
-            zkevm_word(size_t v) {
+            zkevm_word(uint64_t v) {
                 value = v;
             }
 
@@ -63,7 +63,13 @@ namespace nil {
             }
 
             zkevm_word(const uint8_t* data, size_t len) {
-                value = intx::be::unsafe::load<intx::uint256>(data);
+                assert(len <= 32);
+                // copy data into zero-padded memory
+                std::vector<uint8_t> bytes(32, 0);
+                for (unsigned i = 0; i < len; ++i) {
+                    bytes[32 - len + i] = data[i];
+                }
+                value = intx::be::unsafe::load<intx::uint256>(bytes.data());
             }
 
             // operators
@@ -145,8 +151,8 @@ namespace nil {
                 typename BlueprintFieldType::integral_type hi = value[2];
                 typename BlueprintFieldType::integral_type h = value[3];
                 val += lo << 64;
-                val += hi << 126;
-                val += h << 192;
+                val += hi << 64 * 2;
+                val += h << 64 * 3;
                 return val & other;
             }
 
@@ -181,6 +187,11 @@ namespace nil {
             // convertions
             uint64_t to_uint64(size_t i = 0) const {
                 return static_cast<uint64_t>(value[i]);
+            }
+
+            const value_type &get_value() const
+            {
+                return value;
             }
 
             ethash::hash256 to_hash() const {
@@ -236,10 +247,6 @@ namespace nil {
                         value[i] = intx::be::unsafe::load<uint64_t>(data) >> (8 * (sizeof(uint64_t) - len));
                         break;
                 };
-            }
-
-            const uint8_t* raw_data() const {
-                return reinterpret_cast<const uint8_t *>(&value);
             }
 
             typename BlueprintFieldType::value_type w_hi() const {
