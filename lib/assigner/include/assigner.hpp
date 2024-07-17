@@ -20,6 +20,7 @@
 #include <bytecode.hpp>
 #include <baseline.hpp>
 #include <execution_state.hpp>
+#include <rw.hpp>
 
 namespace nil {
     namespace blueprint {
@@ -41,16 +42,21 @@ namespace nil {
 
             using ArithmetizationType = crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>;
 
+            constexpr static size_t BYTECODE_TABLE_INDEX = 0;
+            constexpr static size_t RW_TABLE_INDEX = 1;
+
             assigner(std::vector<assignment<ArithmetizationType>> &assignments):  m_assignments(assignments) {}
 
             // TODO error handling
-            void handle_bytcode(size_t original_code_size, const uint8_t* code) {
-                return process_bytecode_input<BlueprintFieldType>(original_code_size, code, m_assignments);
+            void handle_bytecode(size_t original_code_size, const uint8_t* code) {
+                return process_bytecode_input<BlueprintFieldType>(
+                    original_code_size, code, m_assignments[BYTECODE_TABLE_INDEX]);
             }
 
             // TODO error handling
             void handle_rw(std::vector<rw_operation<BlueprintFieldType>>& rw_trace) {
-                return process_rw_operations<BlueprintFieldType>(rw_trace, m_assignments);
+                return process_rw_operations<BlueprintFieldType>(
+                    rw_trace, m_assignments[RW_TABLE_INDEX]);
             }
 
             std::vector<assignment<ArithmetizationType>> &m_assignments;
@@ -76,7 +82,7 @@ namespace nil {
 
             // fill assignments for bytecode circuit
             if (zkevm_target_circuit & zkevm_circuit::BYTECODE) {
-                assigner->handle_bytcode(state.original_code.size(), code.data());
+                assigner->handle_bytecode(state.original_code.size(), code.data());
             }
 
             int64_t gas = msg->gas;
