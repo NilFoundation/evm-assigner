@@ -123,12 +123,30 @@ inline void rw_circuit_check(const std::vector<nil::blueprint::assignment<Assign
     EXPECT_EQ(assignments[0].witness(9, start_row_index), value_lo);
 }
 
+inline std::string bytes_to_string(const uint8_t *data, int len)
+{
+    std::stringstream ss;
+    ss << std::hex;
+
+    for (int i(0); i < len; ++i) {
+        ss << std::setw(2) << std::setfill('0') << (int)data[i];
+    }
+
+    // Cut all preceding zeros
+    std::string res = ss.str();
+    while (res[0] == '0') res.erase(0,1);
+
+    return res;
+}
+
 TEST_F(AssignerTest, conversions_uint256be_to_zkevm_word)
 {
     evmc::uint256be uint256be_number;
     uint256be_number.bytes[2] = 10;  // Some big number, 10 << 128
     // conversion to zkevm_word
     auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(uint256be_number);
+    // compare string representations of the data
+    ASSERT_EQ(bytes_to_string(uint256be_number.bytes, 32), intx::to_string(tmp.get_value(), 16));
     // conversion back to uint256be
     evmc::uint256be uint256be_result = tmp.to_uint256be();
     // check if same
@@ -141,10 +159,16 @@ TEST_F(AssignerTest, conversions_address_to_zkevm_word)
     address.bytes[19] = 10;
     // conversion to zkevm_word
     auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(address);
+    // compare string representations of the data
+    ASSERT_EQ(bytes_to_string(address.bytes, 20), intx::to_string(tmp.get_value(), 16));
     // conversion back to address
     evmc::address address_result = tmp.to_address();
     // check if same
     check_eq(address.bytes, address_result.bytes, 20);
+    // Check conversion to field
+    std::ostringstream ss;
+    ss << std::hex << tmp.to_field_as_address();
+    ASSERT_EQ(bytes_to_string(address.bytes, 20), ss.str());
 }
 
 TEST_F(AssignerTest, conversions_hash_to_zkevm_word)
@@ -153,6 +177,8 @@ TEST_F(AssignerTest, conversions_hash_to_zkevm_word)
     hash.bytes[2] = 10;
     // conversion to zkevm_word
     auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(hash);
+    // compare string representations of the data
+    ASSERT_EQ(bytes_to_string(hash.bytes, 32), intx::to_string(tmp.get_value(), 16));
     // conversion back to address
     ethash::hash256 hash_result = tmp.to_hash();
     // check if same
@@ -164,24 +190,127 @@ TEST_F(AssignerTest, conversions_uint64_to_zkevm_word)
     uint64_t number = std::numeric_limits<uint64_t>::max();
     // conversion to zkevm_word
     auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(number);
+    // compare string representations of the data
+    std::ostringstream ss;
+    ss << std::hex << number;
+    ASSERT_EQ(ss.str(), intx::to_string(tmp.get_value(), 16));
     // conversion back to address
     auto number_result = tmp.to_uint64();
     // check if same
     EXPECT_EQ(number_result, number);
 }
 
-TEST_F(AssignerTest, load_store_zkevm_word)
+TEST_F(AssignerTest, conversions_load_store)
+{
+    uint32_t number = std::numeric_limits<uint32_t>::max();
+    // initialize from byte array
+    auto tmp = nil::blueprint::zkevm_word<BlueprintFieldType>(
+        reinterpret_cast<uint8_t*>(&number), sizeof(number));
+
+    // compare string representations of the data
+    std::ostringstream ss;
+    ss << std::hex << number;
+    ASSERT_EQ(ss.str(), intx::to_string(tmp.get_value(), 16));
+    // check store result
+    uint32_t restored_number = 0;
+    tmp.store<uint32_t>(reinterpret_cast<uint8_t *>(&restored_number));
+    // check if same
+    EXPECT_EQ(restored_number, number);
+}
+
+TEST_F(AssignerTest, load_partial_zkevm_word)
 {
     uint64_t number = std::numeric_limits<uint64_t>::max();
+    std::array<uint8_t, 26> bytes;
+    for (unsigned i = 0; i < bytes.size(); ++i) {
+        bytes[i] = static_cast<uint8_t>(bytes.size() + i);
+    }
 
     nil::blueprint::zkevm_word<BlueprintFieldType> tmp;
-    // load data to the lase 64 bits
-    tmp.load_partial_data(reinterpret_cast<const uint8_t*>(&number), 8, 0);
-    uint64_t number_result;
-    // store back to the uint64_t variable
-    tmp.store<uint64_t>(reinterpret_cast<uint8_t*>(&number_result));
-    // check if same
-    EXPECT_EQ(number_result, number);
+    constexpr size_t word_size = 8;
+    constexpr auto num_full_words = bytes.size() / word_size;
+    constexpr auto num_partial_bytes = bytes.size() % word_size;
+    auto data = bytes.data();
+
+    // Load top partial word.
+    if constexpr (num_partial_bytes != 0)
+    {
+        tmp.load_partial_data(data, num_partial_bytes, num_full_words);
+        data += num_partial_bytes;
+    }
+
+    // Load full words.
+    for (size_t i = 0; i < num_full_words; ++i)
+    {
+        tmp.load_partial_data(data, word_size, num_full_words - 1 - i);
+        data += word_size;
+    }
+    ASSERT_EQ(bytes_to_string(bytes.data(), bytes.size()), intx::to_string(tmp.get_value(), 16));
+}
+
+TEST_F(AssignerTest, field_bitwise_and) {
+    using intx::operator""_u256;
+    auto bits_set_zkevm_word = [](std::initializer_list<unsigned> bits) {
+        nil::blueprint::zkevm_word<BlueprintFieldType> tmp(0);
+        for (unsigned bit_number : bits)
+        {
+            tmp = tmp + nil::blueprint::zkevm_word<BlueprintFieldType>(1_u256 << bit_number);
+        }
+        return tmp;
+    };
+    auto bits_set_integral = [](std::initializer_list<unsigned> bits) {
+        BlueprintFieldType::integral_type tmp = 0;
+        for (unsigned bit_number : bits)
+        {
+            boost::multiprecision::bit_set(tmp, bit_number);
+        }
+        return tmp;
+    };
+    auto bits_test_integral = [&](BlueprintFieldType::integral_type val,
+                                  std::unordered_set<unsigned> bits) {
+        for (unsigned bit_number = 0; bit_number < BlueprintFieldType::number_bits; ++bit_number)
+        {
+            EXPECT_EQ(boost::multiprecision::bit_test(val, bit_number), bits.contains(bit_number));
+        }
+    };
+    std::initializer_list<unsigned> init_bits = {1, 12, 42, 77, 136, 201, 222};
+    nil::blueprint::zkevm_word<BlueprintFieldType> init = bits_set_zkevm_word(init_bits);
+
+    std::initializer_list<unsigned> conjunction_bits = {4, 12, 77, 165, 222};
+    BlueprintFieldType::integral_type op = bits_set_integral(conjunction_bits);
+
+    BlueprintFieldType::integral_type res = init & op;
+
+    std::unordered_set<unsigned> res_bit_set;
+    std::set_intersection(init_bits.begin(), init_bits.end(), conjunction_bits.begin(),
+        conjunction_bits.end(), std::inserter(res_bit_set, res_bit_set.begin()));
+    bits_test_integral(res, res_bit_set);
+}
+
+TEST_F(AssignerTest, w_hi_lo)
+{
+    using intx::operator""_u256;
+    intx::uint256 hi = 0x12345678901234567890_u256;
+    intx::uint256 lo = 0x98765432109876543210_u256;
+    nil::blueprint::zkevm_word<BlueprintFieldType> tmp((hi << 128) + lo);
+    std::ostringstream original_numbers;
+    original_numbers << intx::to_string(hi, 16) << "|" << intx::to_string(lo, 16);
+    std::ostringstream result_numbers;
+    result_numbers << std::hex << tmp.w_hi() << "|" << tmp.w_lo();
+    EXPECT_EQ(original_numbers.str(), result_numbers.str());
+}
+
+TEST_F(AssignerTest, set_val)
+{
+    using intx::operator""_u256;
+    nil::blueprint::zkevm_word<BlueprintFieldType> tmp;
+    tmp.set_val(0x1, 0);
+    tmp.set_val(0x12, 1);
+    tmp.set_val(0x123, 2);
+    tmp.set_val(0x1234, 3);
+    intx::uint256 expected_val =
+        (0x1234_u256 << 64 * 3) + (0x123_u256 << 64 * 2) + (0x12_u256 << 64) + 0x1;
+    ASSERT_EQ(tmp.get_value(), expected_val);
 }
 
 TEST_F(AssignerTest, mul) {

@@ -285,7 +285,8 @@ private:
         auto hash = nil::blueprint::zkevm_word<BlueprintFieldType>(ethash::keccak256(msg.input_data, msg.input_size));
         auto sender = nil::blueprint::zkevm_word<BlueprintFieldType>(msg.sender);
         auto sum = nil::blueprint::zkevm_word<BlueprintFieldType>(0xff) + seed + hash + sender;
-        auto rehash = ethash::keccak256(sum.raw_data(), nil::blueprint::zkevm_word<BlueprintFieldType>::size);
+        auto rehash = ethash::keccak256(reinterpret_cast<const uint8_t*>(&sum.get_value()),
+            nil::blueprint::zkevm_word<BlueprintFieldType>::size);
         // Result address is the last 20 bytes of the hash
         evmc::address res;
         std::memcpy(res.bytes, rehash.bytes + 12, 20);
