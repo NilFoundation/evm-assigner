@@ -120,7 +120,7 @@ namespace nil {
 
         template<typename BlueprintFieldType>
         void process_rw_operations(std::vector<rw_operation<BlueprintFieldType>>& rw_trace,
-                                    std::vector<assignment<crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>>> &assignments) {
+                                    assignment<crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>> &rw_table) {
             constexpr std::size_t OP = 0;
             constexpr std::size_t ID = 1;
             constexpr std::size_t ADDRESS = 2;
@@ -162,7 +162,7 @@ namespace nil {
 
             constexpr std::size_t total_witness_amount = 60;
 
-            uint32_t start_row_index = assignments[0].witness_column_size(OP);
+            uint32_t start_row_index = rw_table.witness_column_size(OP);
 
             BOOST_LOG_TRIVIAL(debug) << "Process RW circuit\n";
             BOOST_LOG_TRIVIAL(debug) << "Start row index: " << start_row_index << "\n";
@@ -191,36 +191,36 @@ namespace nil {
             for(uint32_t i = 0; i < rw_trace.size(); i++){
                 BOOST_LOG_TRIVIAL(debug) << rw_trace[i] << "\n";
                 // Lookup columns
-                assignments[0].witness(OP, start_row_index + i) = rw_trace[i].op;
-                assignments[0].witness(ID, start_row_index + i) = rw_trace[i].id;
-                assignments[0].witness(ADDRESS, start_row_index + i) = rw_trace[i].address.to_field_as_address();
-                assignments[0].witness(STORAGE_KEY_HI, start_row_index + i) = rw_trace[i].storage_key.w_hi();
-                assignments[0].witness(STORAGE_KEY_LO, start_row_index + i) = rw_trace[i].storage_key.w_lo();
-                assignments[0].witness(RW_ID, start_row_index + i) = rw_trace[i].rw_id;
-                assignments[0].witness(IS_WRITE, start_row_index + i) = rw_trace[i].is_write;
-                assignments[0].witness(VALUE_HI, start_row_index + i) = rw_trace[i].value.w_hi();
-                assignments[0].witness(VALUE_LO, start_row_index + i) = rw_trace[i].value.w_lo();
+                rw_table.witness(OP, start_row_index + i) = rw_trace[i].op;
+                rw_table.witness(ID, start_row_index + i) = rw_trace[i].id;
+                rw_table.witness(ADDRESS, start_row_index + i) = rw_trace[i].address.to_field_as_address();
+                rw_table.witness(STORAGE_KEY_HI, start_row_index + i) = rw_trace[i].storage_key.w_hi();
+                rw_table.witness(STORAGE_KEY_LO, start_row_index + i) = rw_trace[i].storage_key.w_lo();
+                rw_table.witness(RW_ID, start_row_index + i) = rw_trace[i].rw_id;
+                rw_table.witness(IS_WRITE, start_row_index + i) = rw_trace[i].is_write;
+                rw_table.witness(VALUE_HI, start_row_index + i) = rw_trace[i].value.w_hi();
+                rw_table.witness(VALUE_LO, start_row_index + i) = rw_trace[i].value.w_lo();
 
                 // Op selectors
                 typename BlueprintFieldType::integral_type mask = (1 << OP_SELECTORS_AMOUNT);
                 for( std::size_t j = 0; j < OP_SELECTORS_AMOUNT; j++){
                     mask >>= 1;
-                    assignments[0].witness(OP_SELECTORS[j], start_row_index + i) = (((rw_trace[i].op & mask) == 0) ? 0 : 1);
+                    rw_table.witness(OP_SELECTORS[j], start_row_index + i) = (((rw_trace[i].op & mask) == 0) ? 0 : 1);
                 }
 
                 // Fill chunks.
                 // id
                 mask = 0xffff;
                 mask <<= 16;
-                assignments[0].witness(CHUNKS[0], start_row_index + i) = (mask & rw_trace[i].id) >> 16;
+                rw_table.witness(CHUNKS[0], start_row_index + i) = (mask & rw_trace[i].id) >> 16;
                 mask >>= 16;
-                assignments[0].witness(CHUNKS[1], start_row_index + i) = (mask & rw_trace[i].id);
+                rw_table.witness(CHUNKS[1], start_row_index + i) = (mask & rw_trace[i].id);
 
                 // address
                 mask = 0xffff;
                 mask <<= (16 * 9);
                 for( std::size_t j = 0; j < 10; j++){
-                    assignments[0].witness(CHUNKS[2+j], start_row_index + i) = (((rw_trace[i].address & mask) >> (16 * (9-j))));
+                    rw_table.witness(CHUNKS[2+j], start_row_index + i) = (((rw_trace[i].address & mask) >> (16 * (9-j))));
                     mask >>= 16;
                 }
 
@@ -228,16 +228,16 @@ namespace nil {
                 mask = 0xffff;
                 mask <<= (16 * 15);
                 for( std::size_t j = 0; j < 16; j++){
-                    assignments[0].witness(CHUNKS[12+j], start_row_index + i) = (((rw_trace[i].storage_key & mask) >> (16 * (15-j))));
+                    rw_table.witness(CHUNKS[12+j], start_row_index + i) = (((rw_trace[i].storage_key & mask) >> (16 * (15-j))));
                     mask >>= 16;
                 }
 
                 // rw_key
                 mask = 0xffff;
                 mask <<= 16;
-                assignments[0].witness(CHUNKS[28], start_row_index + i) = (mask & rw_trace[i].rw_id) >> 16;
+                rw_table.witness(CHUNKS[28], start_row_index + i) = (mask & rw_trace[i].rw_id) >> 16;
                 mask >>= 16;
-                assignments[0].witness(CHUNKS[29], start_row_index + i) = (mask & rw_trace[i].rw_id);
+                rw_table.witness(CHUNKS[29], start_row_index + i) = (mask & rw_trace[i].rw_id);
 
                 // fill sorting indices and advices
                 if( i == 0 ) continue;
@@ -245,42 +245,42 @@ namespace nil {
                 std::size_t diff_ind = 0;
                 for(; diff_ind < sorting.size(); diff_ind++){
                     if(
-                        assignments[0].witness(sorting[diff_ind], start_row_index+i) !=
-                        assignments[0].witness(sorting[diff_ind], start_row_index+i - 1)
+                        rw_table.witness(sorting[diff_ind], start_row_index+i) !=
+                        rw_table.witness(sorting[diff_ind], start_row_index+i - 1)
                     ) break;
                 }
                 if( diff_ind < 30 ){
-                    assignments[0].witness(VALUE_BEFORE_HI, start_row_index + i) = rw_trace[i].value_prev.w_hi();
-                    assignments[0].witness(VALUE_BEFORE_LO, start_row_index + i) = rw_trace[i].value_prev.w_lo();
+                    rw_table.witness(VALUE_BEFORE_HI, start_row_index + i) = rw_trace[i].value_prev.w_hi();
+                    rw_table.witness(VALUE_BEFORE_LO, start_row_index + i) = rw_trace[i].value_prev.w_lo();
                 } else {
-                    assignments[0].witness(VALUE_BEFORE_HI, start_row_index + i) = assignments[0].witness(VALUE_BEFORE_HI, start_row_index + i - 1);
-                    assignments[0].witness(VALUE_BEFORE_LO, start_row_index + i) = assignments[0].witness(VALUE_BEFORE_LO, start_row_index + i - 1);
+                    rw_table.witness(VALUE_BEFORE_HI, start_row_index + i) = rw_table.witness(VALUE_BEFORE_HI, start_row_index + i - 1);
+                    rw_table.witness(VALUE_BEFORE_LO, start_row_index + i) = rw_table.witness(VALUE_BEFORE_LO, start_row_index + i - 1);
                 }
 
                 mask = (1 << INDICES_AMOUNT);
                 for(std::size_t j = 0; j < INDICES_AMOUNT; j++){
                     mask >>= 1;
-                    assignments[0].witness(INDICES[j], start_row_index + i) = ((mask & diff_ind) == 0? 0: 1);
+                    rw_table.witness(INDICES[j], start_row_index + i) = ((mask & diff_ind) == 0? 0: 1);
                 }
                 if( rw_trace[i].op != START_OP && diff_ind < 30){
-                    assignments[0].witness(IS_LAST, start_row_index + i - 1) = 1;
+                    rw_table.witness(IS_LAST, start_row_index + i - 1) = 1;
                 }
                 if( rw_trace[i].op != START_OP && rw_trace[i].op != PADDING_OP && diff_ind < 30){
-                    assignments[0].witness(IS_FIRST, start_row_index + i) = 1;
+                    rw_table.witness(IS_FIRST, start_row_index + i) = 1;
                 }
 
-                assignments[0].witness(DIFFERENCE, start_row_index + i) =
-                    assignments[0].witness(sorting[diff_ind], start_row_index+i) -
-                    assignments[0].witness(sorting[diff_ind], start_row_index+i - 1);
+                rw_table.witness(DIFFERENCE, start_row_index + i) =
+                    rw_table.witness(sorting[diff_ind], start_row_index+i) -
+                    rw_table.witness(sorting[diff_ind], start_row_index+i - 1);
                 BOOST_LOG_TRIVIAL(debug) << "Diff index = " << diff_ind <<
-                    " is_first = " << assignments[0].witness(IS_FIRST, start_row_index + i) <<
-                    " is_last = " << assignments[0].witness(IS_LAST, start_row_index + i) <<
+                    " is_first = " << rw_table.witness(IS_FIRST, start_row_index + i) <<
+                    " is_last = " << rw_table.witness(IS_LAST, start_row_index + i) <<
                     "\n";
 
-                if( assignments[0].witness(DIFFERENCE, start_row_index + i) == 0)
-                    assignments[0].witness(INV_DIFFERENCE, start_row_index + i) = 0;
+                if( rw_table.witness(DIFFERENCE, start_row_index + i) == 0)
+                    rw_table.witness(INV_DIFFERENCE, start_row_index + i) = 0;
                 else
-                    assignments[0].witness(INV_DIFFERENCE, start_row_index + i) = BlueprintFieldType::value_type::one() / assignments[0].witness(DIFFERENCE, start_row_index+i);
+                    rw_table.witness(INV_DIFFERENCE, start_row_index + i) = BlueprintFieldType::value_type::one() / rw_table.witness(DIFFERENCE, start_row_index+i);
             }
         }
 

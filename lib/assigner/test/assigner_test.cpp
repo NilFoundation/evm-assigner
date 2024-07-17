@@ -103,24 +103,26 @@ inline void rw_circuit_check(const std::vector<nil::blueprint::assignment<Assign
                              bool is_write,
                              const typename AssignerTest::BlueprintFieldType::value_type& value_hi,
                              const typename AssignerTest::BlueprintFieldType::value_type& value_lo) {
+    auto& rw_table =
+        assignments[nil::blueprint::assigner<AssignerTest::BlueprintFieldType>::RW_TABLE_INDEX];
     // OP_TYPE
-    EXPECT_EQ(assignments[0].witness(0, start_row_index), operation_type);
+    EXPECT_EQ(rw_table.witness(0, start_row_index), operation_type);
     // CALL ID
-    EXPECT_EQ(assignments[0].witness(1, start_row_index), call_id);
+    EXPECT_EQ(rw_table.witness(1, start_row_index), call_id);
     // address (stack size)
-    EXPECT_EQ(assignments[0].witness(2, start_row_index), address);
+    EXPECT_EQ(rw_table.witness(2, start_row_index), address);
     // storage key hi
-    EXPECT_EQ(assignments[0].witness(3, start_row_index), stoage_key_hi);
+    EXPECT_EQ(rw_table.witness(3, start_row_index), stoage_key_hi);
     // storage key lo
-    EXPECT_EQ(assignments[0].witness(4, start_row_index), stoage_key_lo);
+    EXPECT_EQ(rw_table.witness(4, start_row_index), stoage_key_lo);
     // RW ID
-    EXPECT_EQ(assignments[0].witness(6, start_row_index), rw_id);
+    EXPECT_EQ(rw_table.witness(6, start_row_index), rw_id);
     // is write
-    EXPECT_EQ(assignments[0].witness(7, start_row_index), (is_write ? 1 : 0));
+    EXPECT_EQ(rw_table.witness(7, start_row_index), (is_write ? 1 : 0));
     // value hi
-    EXPECT_EQ(assignments[0].witness(8, start_row_index), value_hi);
+    EXPECT_EQ(rw_table.witness(8, start_row_index), value_hi);
     // value lo
-    EXPECT_EQ(assignments[0].witness(9, start_row_index), value_lo);
+    EXPECT_EQ(rw_table.witness(9, start_row_index), value_lo);
 }
 
 TEST_F(AssignerTest, conversions_uint256be_to_zkevm_word)
@@ -196,7 +198,7 @@ TEST_F(AssignerTest, mul) {
 
     nil::blueprint::evaluate<BlueprintFieldType>(host_interface, ctx, rev, &msg, code.data(), code.size(), assigner_ptr);
 
-    uint32_t start_row_index = 5;
+    uint32_t start_row_index = 0;
     uint32_t call_id = 0;
     //PUSH
     rw_circuit_check(assignments, start_row_index, 1/*STACK_OP*/, call_id, 0/*address in stack*/, 0/*storage key hi*/, 0/*storage key lo*/,
