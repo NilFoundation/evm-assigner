@@ -32,7 +32,6 @@ if(PROJECT_VERSION_MAJOR EQUAL 0)
 endif()
 
 find_package(ethash CONFIG REQUIRED)
-find_package(evmc REQUIRED)
 
 cable_configure_compiler(NO_STACK_PROTECTION)
 if(CABLE_COMPILER_GNULIKE)

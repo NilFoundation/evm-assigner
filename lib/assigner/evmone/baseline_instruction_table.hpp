@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <evmc/evmc.h>
+#include <evmc.h>
 #include <array>
 
 namespace evmone::baseline

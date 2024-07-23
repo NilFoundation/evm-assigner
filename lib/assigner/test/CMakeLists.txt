@@ -5,6 +5,8 @@ find_package(GTest CONFIG REQUIRED)
 add_executable(assigner_tests
                assigner_test.cpp)
 
+target_include_directories(assigner_tests PRIVATE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../evmc>)
 target_link_libraries(
         assigner_tests
         PRIVATE

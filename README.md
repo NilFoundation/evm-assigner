@@ -15,7 +15,6 @@ Created by members of the [Ipsilon] (ex-[Ewasm]) team.
 
 ### Libraries
 
-- [evmc](https://github.com/ethereum/evmc)
 - [intx](https://github.com/chfast/intx)
 - [ethash](https://github.com/chfast/ethash)
 - [blueprint](https://github.com/NilFoundation/zkllvm-blueprint)
