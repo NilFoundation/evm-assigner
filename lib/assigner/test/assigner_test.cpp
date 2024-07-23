@@ -3,8 +3,7 @@
 #include <assigner.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
 
-#include <evmc/evmc.hpp>
-#include <evmc/mocked_host.hpp>
+#include <evmc.hpp>
 #include <instructions_opcodes.hpp>
 #include <vm_host.hpp>
 

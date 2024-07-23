@@ -5,8 +5,8 @@
 // LICENSE file in the root directory of this source tree.
 //---------------------------------------------------------------------------//
 
-#ifndef EVM1_ASSIGNER_INCLUDE_RW_HPP_
-#define EVM1_ASSIGNER_INCLUDE_RW_HPP_
+#ifndef EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_RW_HPP_
+#define EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_RW_HPP_
 
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 #include <nil/blueprint/blueprint/plonk/assignment.hpp>
@@ -287,4 +287,4 @@ namespace nil {
     }     // namespace evm_assigner
 }    // namespace nil
 
-#endif    // EVM1_ASSIGNER_INCLUDE_RW_HPP_
+#endif    // EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_RW_HPP_

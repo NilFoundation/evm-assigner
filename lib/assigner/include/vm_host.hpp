@@ -3,7 +3,7 @@
 
 // Based on example host
 
-#include <evmc/evmc.hpp>
+#include <evmc.hpp>
 #include <ethash/keccak.hpp>
 
 #include <algorithm>
@@ -44,9 +44,6 @@ using accounts = std::map<evmc::address, account>;
 template<typename BlueprintFieldType>
 class VMHost : public evmc::Host
 {
-    evmc::accounts accounts;
-    evmc_tx_context tx_context{};
-
 public:
     VMHost() = default;
     explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> _assigner, const std::string& _target_circuit = "") noexcept
@@ -57,21 +54,23 @@ public:
       : accounts{_accounts}, tx_context{_tx_context}, assigner{_assigner}, target_circuit{_target_circuit}
     {}
 
-    bool account_exists(const evmc::address& addr) const noexcept final
+    bool account_exists(const evmc::address& addr) noexcept final
     {
-        return accounts.find(addr) != accounts.end();
+        auto account_iter = get_account(addr);
+        return account_iter != accounts.end();
     }
 
     evmc::bytes32 get_storage(const evmc::address& addr,
-                              const evmc::bytes32& key) const noexcept final
+                              const evmc::bytes32& key) noexcept final
     {
-        const auto account_iter = accounts.find(addr);
-        if (account_iter == accounts.end())
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
             return {};
-
+        }
         const auto storage_iter = account_iter->second.storage.find(key);
-        if (storage_iter != account_iter->second.storage.end())
+        if (storage_iter != account_iter->second.storage.end()) {
             return storage_iter->second;
+        }
         return {};
     }
 
@@ -79,47 +78,59 @@ public:
                                     const evmc::bytes32& key,
                                     const evmc::bytes32& value) noexcept final
     {
-        auto& account = accounts[addr];
-        auto prev_value = account.storage[key];
-        account.storage[key] = value;
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
+            return EVMC_STORAGE_DELETED;
+        }
+
+        auto storage_iter = account_iter->second.storage.find(key);
+        if (storage_iter == account_iter->second.storage.end()) {
+            return EVMC_STORAGE_DELETED;
+        }
+        auto prev_value = storage_iter->second;
+        storage_iter->second = value;
 
         return (prev_value == value) ? EVMC_STORAGE_ASSIGNED : EVMC_STORAGE_MODIFIED;
     }
 
-    evmc::uint256be get_balance(const evmc::address& addr) const noexcept final
+    evmc::uint256be get_balance(const evmc::address& addr) noexcept final
     {
-        auto it = accounts.find(addr);
-        if (it != accounts.end())
-            return it->second.balance;
-        return {};
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
+            return {};
+        }
+        return account_iter->second.balance;
     }
 
-    size_t get_code_size(const evmc::address& addr) const noexcept final
+    size_t get_code_size(const evmc::address& addr) noexcept final
     {
-        auto it = accounts.find(addr);
-        if (it != accounts.end())
-            return it->second.code.size();
-        return 0;
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
+            return 0;
+        }
+        return account_iter->second.code.size();
     }
 
-    evmc::bytes32 get_code_hash(const evmc::address& addr) const noexcept final
+    evmc::bytes32 get_code_hash(const evmc::address& addr) noexcept final
     {
-        auto it = accounts.find(addr);
-        if (it != accounts.end())
-            return it->second.code_hash();
-        return {};
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
+            return {};
+        }
+        return account_iter->second.code_hash();
     }
 
     size_t copy_code(const evmc::address& addr,
                      size_t code_offset,
                      uint8_t* buffer_data,
-                     size_t buffer_size) const noexcept final
+                     size_t buffer_size) noexcept final
     {
-        const auto it = accounts.find(addr);
-        if (it == accounts.end())
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
             return 0;
+        }
 
-        const auto& code = it->second.code;
+        const auto& code = account_iter->second.code;
 
         if (code_offset >= code.size())
             return 0;
@@ -195,11 +206,12 @@ public:
     }
 
     evmc::bytes32 get_transient_storage(const evmc::address& addr,
-                                        const evmc::bytes32& key) const noexcept override
+                                        const evmc::bytes32& key) noexcept override
     {
-        const auto account_iter = accounts.find(addr);
-        if (account_iter == accounts.end())
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
             return {};
+        }
 
         const auto transient_storage_iter = account_iter->second.transient_storage.find(key);
         if (transient_storage_iter != account_iter->second.transient_storage.end())
@@ -211,22 +223,33 @@ public:
                                const evmc::bytes32& key,
                                const evmc::bytes32& value) noexcept override
     {
-        accounts[addr].transient_storage[key] = value;
+        auto account_iter = get_account(addr);
+        if (account_iter == accounts.end()) {
+            return;
+        }
+        account_iter->second.transient_storage[key] = value;
     }
 
+protected:
+    evmc::accounts accounts;
+
+    virtual evmc::accounts::iterator get_account(const evmc::address& addr) noexcept {
+        return accounts.find(addr);
+    }
 private:
+    evmc_tx_context tx_context{};
     std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> assigner;
     std::string target_circuit;
 
     evmc::Result handle_call(const evmc_message& msg) {
-        auto sender_iter = accounts.find(msg.sender);
+        auto sender_iter = get_account(msg.sender);
         if (sender_iter == accounts.end())
         {
             // Sender account does not exist
             return evmc::Result{EVMC_INTERNAL_ERROR};
         }
         auto &sender_acc = sender_iter->second;
-        auto account_iter = accounts.find(msg.code_address);
+        auto account_iter = get_account(msg.code_address);
         if (account_iter == accounts.end())
         {
             // Create account
@@ -252,7 +275,7 @@ private:
 
     evmc::Result handle_create(const evmc_message& msg) {
         evmc::address new_contract_address = calculate_address(msg);
-        if (accounts.find(new_contract_address) != accounts.end())
+        if (get_account(new_contract_address) != accounts.end())
         {
             // Address collision
             return evmc::Result{EVMC_FAILURE};

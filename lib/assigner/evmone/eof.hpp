@@ -4,8 +4,8 @@
 #pragma once
 
 #include <nil/crypto3/detail/assert.hpp>
-#include <evmc/evmc.h>
-#include <evmc/utils.h>
+#include <evmc.h>
+#include "utils.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>

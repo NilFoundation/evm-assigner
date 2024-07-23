@@ -5,10 +5,10 @@
 // LICENSE file in the root directory of this source tree.
 //---------------------------------------------------------------------------//
 
-#ifndef EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ZKEVM_WORD_HPP_
-#define EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ZKEVM_WORD_HPP_
+#ifndef EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_ZKEVM_WORD_HPP_
+#define EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_ZKEVM_WORD_HPP_
 
-#include <evmc/evmc.hpp>
+#include <evmc.hpp>
 #include <intx/intx.hpp>
 #include <ethash/keccak.hpp>
 
@@ -277,4 +277,4 @@ namespace nil {
         }
     }     // namespace evm_assigner
 }    // namespace nil
-#endif    // EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ZKEVM_WORD_HPP_
+#endif    // EVM_ASSIGNER_LIB_ASSIGNER_INCLUDE_ZKEVM_WORD_HPP_

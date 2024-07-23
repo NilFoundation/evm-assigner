@@ -8,8 +8,8 @@
 #include "execution_state.hpp"
 #include "instructions.hpp"
 
-#include <evmc/evmc.h>
-#include <evmc/utils.h>
+#include <evmc.h>
+#include <utils.h>
 #include <memory>
 #include <string_view>
 #include <vector>

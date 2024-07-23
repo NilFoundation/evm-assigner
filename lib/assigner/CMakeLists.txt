@@ -21,10 +21,11 @@ find_package(crypto3_blueprint REQUIRED)
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/evmc>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/evmone>)
 
 target_link_libraries(${PROJECT_NAME}
-                      PUBLIC evmc::evmc intx::intx crypto3::all crypto3::blueprint ethash::keccak)
+                      PUBLIC intx::intx crypto3::all crypto3::blueprint ethash::keccak)
 
 set_target_properties(
     ${PROJECT_NAME}
@@ -48,6 +49,12 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/evmone/execution_state.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/evmone/baseline.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/evmone/eof.hpp
               ${CMAKE_CURRENT_SOURCE_DIR}/evmone/instructions_opcodes.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmc/evmc.h
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmc/evmc.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmc/filter_iterator.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmc/helpers.h
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmc/hex.hpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/evmc/utils.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 if(BUILD_ASSIGNER_TESTS)
     add_subdirectory(test)

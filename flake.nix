@@ -2,7 +2,7 @@
   description = "Nix flake for EVM-assigner";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     nix-3rdparty = {
       url = "github:NilFoundation/nix-3rdparty";
@@ -14,15 +14,17 @@
     nil-crypto3 = {
       url = "https://github.com/NilFoundation/crypto3";
       type = "git";
-      submodules = true;
+      rev = "3bd5b8df2091274abaa28fd86b9e3e89d661b95a";
       inputs = {
         nixpkgs.follows = "nixpkgs";
+        nix-3rdparty.follows = "nix-3rdparty";
       };
     };
     nil-zkllvm-blueprint = {
       url = "https://github.com/NilFoundation/zkllvm-blueprint";
       type = "git";
       submodules = true;
+      rev = "73d6a40e39b6b6fc7b1c84441e62337206dc0815";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
@@ -72,7 +74,6 @@
           }:
           let
             deps = with pkgs; [
-              (evmc.override { inherit enableDebug; })
               (intx.override { inherit enableDebug; })
               ethash
             ];
