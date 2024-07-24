@@ -20,11 +20,11 @@
 #include <nil/crypto3/random/algebraic_engine.hpp>
 
 namespace nil {
-    namespace blueprint {
+    namespace evm_assigner {
 
         template<typename BlueprintFieldType>
         void process_bytecode_input(size_t original_code_size, const uint8_t* code,
-                                    assignment<crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>> &bytecode_table) {
+                                    nil::blueprint::assignment<crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>> &bytecode_table) {
             using value_type = typename BlueprintFieldType::value_type;
             using hash_type = nil::crypto3::hashes::keccak_1600<256>;
 
@@ -106,7 +106,7 @@ namespace nil {
             }
         }
 
-    }     // namespace blueprint
+    }     // namespace evm_assigner
 }    // namespace nil
 
 #endif    // EVM1_ASSIGNER_INCLUDE_BYTECODE_HPP_

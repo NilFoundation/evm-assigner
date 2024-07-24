@@ -23,7 +23,7 @@
 #include <rw.hpp>
 
 namespace nil {
-    namespace blueprint {
+    namespace evm_assigner {
 
         enum zkevm_circuit : uint8_t {
             ALL = 0xFF,
@@ -45,7 +45,7 @@ namespace nil {
             constexpr static size_t BYTECODE_TABLE_INDEX = 0;
             constexpr static size_t RW_TABLE_INDEX = 1;
 
-            assigner(std::vector<assignment<ArithmetizationType>> &assignments):  m_assignments(assignments) {}
+            assigner(std::vector<nil::blueprint::assignment<ArithmetizationType>> &assignments):  m_assignments(assignments) {}
 
             // TODO error handling
             void handle_bytecode(size_t original_code_size, const uint8_t* code) {
@@ -59,13 +59,13 @@ namespace nil {
                     rw_trace, m_assignments[RW_TABLE_INDEX]);
             }
 
-            std::vector<assignment<ArithmetizationType>> &m_assignments;
+            std::vector<nil::blueprint::assignment<ArithmetizationType>> &m_assignments;
         };
 
         template<typename BlueprintFieldType>
         static evmc::Result evaluate(const evmc_host_interface* host, evmc_host_context* ctx,
                                 evmc_revision rev, const evmc_message* msg, const uint8_t* code_ptr, size_t code_size,
-                                std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner, const std::string& target_circuit = "") {
+                                std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> assigner, const std::string& target_circuit = "") {
             if(zkevm_circuits_map.find(target_circuit) == zkevm_circuits_map.end()) {
                 std::cerr << "Unknown target circuit " << target_circuit << "\n";
                 return evmc::Result{EVMC_FAILURE, msg->gas};
@@ -109,7 +109,7 @@ namespace nil {
             return evmc::Result{evmc_result};
         }
 
-    }     // namespace blueprint
+    }     // namespace evm_assigner
 }    // namespace nil
 
 #endif    // EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ASSIGNER_HPP_

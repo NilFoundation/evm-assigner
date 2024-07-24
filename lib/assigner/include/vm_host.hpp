@@ -49,11 +49,11 @@ class VMHost : public evmc::Host
 
 public:
     VMHost() = default;
-    explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner, const std::string& _target_circuit = "") noexcept
+    explicit VMHost(evmc_tx_context& _tx_context, std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> _assigner, const std::string& _target_circuit = "") noexcept
       : tx_context{_tx_context}, assigner{_assigner}, target_circuit{_target_circuit}
     {}
 
-    VMHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner, const std::string& _target_circuit = "") noexcept
+    VMHost(evmc_tx_context& _tx_context, evmc::accounts& _accounts, std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> _assigner, const std::string& _target_circuit = "") noexcept
       : accounts{_accounts}, tx_context{_tx_context}, assigner{_assigner}, target_circuit{_target_circuit}
     {}
 
@@ -215,7 +215,7 @@ public:
     }
 
 private:
-    std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner;
+    std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> assigner;
     std::string target_circuit;
 
     evmc::Result handle_call(const evmc_message& msg) {
@@ -234,18 +234,18 @@ private:
         }
         auto& acc = accounts[msg.code_address];
         if (msg.kind == EVMC_CALL) {
-            auto value_to_transfer = nil::blueprint::zkevm_word<BlueprintFieldType>(msg.value);
-            auto balance = nil::blueprint::zkevm_word<BlueprintFieldType>(sender_acc.balance);
+            auto value_to_transfer = nil::evm_assigner::zkevm_word<BlueprintFieldType>(msg.value);
+            auto balance = nil::evm_assigner::zkevm_word<BlueprintFieldType>(sender_acc.balance);
             // Balance was already checked in evmone, so simply adjust it
             sender_acc.balance = (balance - value_to_transfer).to_uint256be();
-            acc.balance = (value_to_transfer + nil::blueprint::zkevm_word<BlueprintFieldType>(acc.balance)).to_uint256be();
+            acc.balance = (value_to_transfer + nil::evm_assigner::zkevm_word<BlueprintFieldType>(acc.balance)).to_uint256be();
         }
         if (acc.code.empty())
         {
             return evmc::Result{EVMC_SUCCESS, msg.gas, 0, msg.input_data, msg.input_size};
         }
         // TODO: handle precompiled contracts
-        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
+        evmc::Result res = nil::evm_assigner::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
                                                                         EVMC_LATEST_STABLE_REVISION, &msg, acc.code.data(), acc.code.size(), assigner, target_circuit);
         return res;
     }
@@ -267,7 +267,7 @@ private:
         init_msg.recipient = new_contract_address;
         init_msg.sender = msg.sender;
         init_msg.input_size = 0;
-        evmc::Result res = nil::blueprint::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
+        evmc::Result res = nil::evm_assigner::evaluate<BlueprintFieldType>(&get_interface(), to_context(),
                                                                         EVMC_LATEST_STABLE_REVISION, &init_msg, msg.input_data, msg.input_size, assigner, target_circuit);
         if (res.status_code == EVMC_SUCCESS)
         {
@@ -281,12 +281,12 @@ private:
     evmc::address calculate_address(const evmc_message& msg) {
         // TODO: Implement for CREATE opcode, for now the result is only correct for CREATE2
         // CREATE requires rlp encoding
-        auto seed = nil::blueprint::zkevm_word<BlueprintFieldType>(msg.create2_salt);
-        auto hash = nil::blueprint::zkevm_word<BlueprintFieldType>(ethash::keccak256(msg.input_data, msg.input_size));
-        auto sender = nil::blueprint::zkevm_word<BlueprintFieldType>(msg.sender);
-        auto sum = nil::blueprint::zkevm_word<BlueprintFieldType>(0xff) + seed + hash + sender;
+        auto seed = nil::evm_assigner::zkevm_word<BlueprintFieldType>(msg.create2_salt);
+        auto hash = nil::evm_assigner::zkevm_word<BlueprintFieldType>(ethash::keccak256(msg.input_data, msg.input_size));
+        auto sender = nil::evm_assigner::zkevm_word<BlueprintFieldType>(msg.sender);
+        auto sum = nil::evm_assigner::zkevm_word<BlueprintFieldType>(0xff) + seed + hash + sender;
         auto rehash = ethash::keccak256(reinterpret_cast<const uint8_t*>(&sum.get_value()),
-            nil::blueprint::zkevm_word<BlueprintFieldType>::size);
+            nil::evm_assigner::zkevm_word<BlueprintFieldType>::size);
         // Result address is the last 20 bytes of the hash
         evmc::address res;
         std::memcpy(res.bytes, rehash.bytes + 12, 20);
@@ -295,7 +295,7 @@ private:
 };
 
 template<typename BlueprintFieldType>
-evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner) {
+evmc_host_context* vm_host_create_context(evmc_tx_context tx_context, std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> assigner) {
     auto host = new VMHost<BlueprintFieldType>{tx_context, assigner};
     return host->to_context();
 }

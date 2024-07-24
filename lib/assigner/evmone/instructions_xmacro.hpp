@@ -118,12 +118,12 @@
     ON_OPCODE_UNDEFINED(0x4f)                               \
                                                             \
     ON_OPCODE_IDENTIFIER(OP_POP, instructions<BlueprintFieldType>::pop)                       \
-    ON_OPCODE_IDENTIFIER(OP_MLOAD, instructions<BlueprintFieldType>::template mload<typename nil::blueprint::zkevm_word<BlueprintFieldType>::value_type>)          \
+    ON_OPCODE_IDENTIFIER(OP_MLOAD, instructions<BlueprintFieldType>::template mload<typename nil::evm_assigner::zkevm_word<BlueprintFieldType>::value_type>)          \
     ON_OPCODE_IDENTIFIER(OP_MLOAD8, instructions<BlueprintFieldType>::template mload<uint8_t>)         \
     ON_OPCODE_IDENTIFIER(OP_MLOAD16, instructions<BlueprintFieldType>::template mload<uint16_t>)       \
     ON_OPCODE_IDENTIFIER(OP_MLOAD32, instructions<BlueprintFieldType>::template mload<uint32_t>)       \
     ON_OPCODE_IDENTIFIER(OP_MLOAD64, instructions<BlueprintFieldType>::template mload<uint64_t>)       \
-    ON_OPCODE_IDENTIFIER(OP_MSTORE, instructions<BlueprintFieldType>::template mstore<typename nil::blueprint::zkevm_word<BlueprintFieldType>::value_type>)        \
+    ON_OPCODE_IDENTIFIER(OP_MSTORE, instructions<BlueprintFieldType>::template mstore<typename nil::evm_assigner::zkevm_word<BlueprintFieldType>::value_type>)        \
     ON_OPCODE_IDENTIFIER(OP_MSTORE8, instructions<BlueprintFieldType>::template mstore<uint8_t>)       \
     ON_OPCODE_IDENTIFIER(OP_MSTORE16, instructions<BlueprintFieldType>::template mstore<uint16_t>)     \
     ON_OPCODE_IDENTIFIER(OP_MSTORE32, instructions<BlueprintFieldType>::template mstore<uint32_t>)     \

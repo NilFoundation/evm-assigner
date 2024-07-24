@@ -19,7 +19,7 @@
 #include <nil/crypto3/marshalling/algebra/types/field_element.hpp>
 
 namespace nil {
-    namespace blueprint {
+    namespace evm_assigner {
 
         using Endianness = nil::marshalling::option::big_endian;
         using TTypeBase = nil::marshalling::field_type<Endianness>;
@@ -275,6 +275,6 @@ namespace nil {
             }
             return os;
         }
-    }     // namespace blueprint
+    }     // namespace evm_assigner
 }    // namespace nil
 #endif    // EVM1_ASSIGNER_INCLUDE_NIL_BLUEPRINT_ZKEVM_WORD_HPP_
