@@ -18,7 +18,7 @@
 #include <zkevm_word.hpp>
 
 namespace nil {
-    namespace blueprint {
+    namespace evm_assigner {
 
         template<typename BlueprintFieldType>
         struct rw_operation{
@@ -120,7 +120,7 @@ namespace nil {
 
         template<typename BlueprintFieldType>
         void process_rw_operations(std::vector<rw_operation<BlueprintFieldType>>& rw_trace,
-                                    assignment<crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>> &rw_table) {
+                                    nil::blueprint::assignment<crypto3::zk::snark::plonk_constraint_system<BlueprintFieldType>> &rw_table) {
             constexpr std::size_t OP = 0;
             constexpr std::size_t ID = 1;
             constexpr std::size_t ADDRESS = 2;
@@ -284,7 +284,7 @@ namespace nil {
             }
         }
 
-    }     // namespace blueprint
+    }     // namespace evm_assigner
 }    // namespace nil
 
 #endif    // EVM1_ASSIGNER_INCLUDE_RW_HPP_

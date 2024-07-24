@@ -76,7 +76,7 @@ template <typename BlueprintFieldType>
 struct Position
 {
     code_iterator code_it;  ///< The position in the code.
-    nil::blueprint::zkevm_word<BlueprintFieldType>* stack_top;     ///< The pointer to the stack top.
+    nil::evm_assigner::zkevm_word<BlueprintFieldType>* stack_top;     ///< The pointer to the stack top.
 };
 
 /// Checks instruction requirements before execution.
@@ -96,8 +96,8 @@ struct Position
 ///          or EVMC_SUCCESS if everything is fine.
 template <typename BlueprintFieldType>
 inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t& gas_left,
-                                           const nil::blueprint::zkevm_word<BlueprintFieldType>* stack_top,
-                                           const nil::blueprint::zkevm_word<BlueprintFieldType>* stack_bottom,
+                                           const nil::evm_assigner::zkevm_word<BlueprintFieldType>* stack_top,
+                                           const nil::evm_assigner::zkevm_word<BlueprintFieldType>* stack_bottom,
                                            Opcode op) noexcept
 {
     assert(
@@ -196,7 +196,7 @@ template <typename BlueprintFieldType>
 }
 /// A helper to invoke the instruction implementation of the given opcode Op.
 template <typename BlueprintFieldType>
-[[release_inline]] inline Position<BlueprintFieldType> invoke(const CostTable& cost_table, const nil::blueprint::zkevm_word<BlueprintFieldType>* stack_bottom,
+[[release_inline]] inline Position<BlueprintFieldType> invoke(const CostTable& cost_table, const nil::evm_assigner::zkevm_word<BlueprintFieldType>* stack_bottom,
     Position<BlueprintFieldType> pos, int64_t& gas, ExecutionState<BlueprintFieldType>& state, const uint8_t& op) noexcept
 {
     if (const auto status = check_requirements<BlueprintFieldType>(cost_table, gas, pos.stack_top, stack_bottom, Opcode(op));

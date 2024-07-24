@@ -11,7 +11,7 @@
 #include <rw.hpp>
 
 namespace nil {
-    namespace blueprint {
+    namespace evm_assigner {
         template<typename BlueprintFieldType>
         struct assigner;
     }
@@ -36,14 +36,14 @@ public:
     static constexpr auto limit = 1024;
 
     /// Returns the pointer to the "bottom", i.e. below the stack space.
-    [[nodiscard, clang::no_sanitize("bounds")]] nil::blueprint::zkevm_word<BlueprintFieldType>* bottom() noexcept
+    [[nodiscard, clang::no_sanitize("bounds")]] nil::evm_assigner::zkevm_word<BlueprintFieldType>* bottom() noexcept
     {
         return m_stack_space - 1;
     }
 
 private:
     /// The storage allocated for maximum possible number of items.
-    nil::blueprint::zkevm_word<BlueprintFieldType> m_stack_space[limit];
+    nil::evm_assigner::zkevm_word<BlueprintFieldType> m_stack_space[limit];
 };
 
 
@@ -146,8 +146,8 @@ public:
     size_t output_size = 0;
 
     std::size_t call_id;
-    std::vector<nil::blueprint::rw_operation<BlueprintFieldType>> rw_trace;
-    std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> assigner;
+    std::vector<nil::evm_assigner::rw_operation<BlueprintFieldType>> rw_trace;
+    std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> assigner;
 
 private:
     evmc_tx_context m_tx = {};
@@ -171,7 +171,7 @@ public:
 
     ExecutionState(const evmc_message& message, evmc_revision revision,
         const evmc_host_interface& host_interface, evmc_host_context* host_ctx, bytes_view _code,
-        bytes_view _data, size_t _call_id, std::shared_ptr<nil::blueprint::assigner<BlueprintFieldType>> _assigner) noexcept
+        bytes_view _data, size_t _call_id, std::shared_ptr<nil::evm_assigner::assigner<BlueprintFieldType>> _assigner) noexcept
       : msg{&message},
         host{host_interface, host_ctx},
         rev{revision},
