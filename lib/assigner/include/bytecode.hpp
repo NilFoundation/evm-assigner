@@ -87,7 +87,7 @@ namespace nil {
                 } else {
                     // BYTE
                     bytecode_table.witness(TAG, start_row_index + cur) = 1;
-                    bytecode_table.witness(INDEX, start_row_index + cur) =  j-1;
+                    bytecode_table.witness(INDEX, start_row_index + cur) =  j-1; // TODO: why j-1? Index is 0 for both j == 0 and j == 1
                     bytecode_table.witness(LENGTH_LEFT, start_row_index + cur) = prev_length - 1;
                     prev_length = prev_length - 1;
                     if (push_size == 0) {
